@@ -1,98 +1,164 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Svg, { G, Path, Text as SvgText } from "react-native-svg";
+import { Link } from "expo-router";
+import { Colors } from "../../constants/theme";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const prizes = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
 
-export default function HomeScreen() {
+export default function AboutScreen() {
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const theme = Colors.light; // Choose dark or light
+
+  const spinWheel = () => {
+    if (spinning) return;
+    setSpinning(true);
+    setResult(null);
+
+    const prizeIndex = Math.floor(Math.random() * prizes.length);
+    const turns = 5;
+    const angle = 360 / prizes.length;
+    const endDeg = 360 * turns + (360 - prizeIndex * angle) - angle / 2;
+
+    Animated.timing(spinAnim, {
+      toValue: endDeg,
+      duration: 3000,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setSpinning(false);
+      setResult(prizes[prizeIndex]);
+      spinAnim.setValue(endDeg % 360);
+    });
+  };
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 360],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  const radius = 200;
+  const anglePerSlice = (2 * Math.PI) / prizes.length;
+
+  const createPath = (i: number) => {
+    const startAngle = i * anglePerSlice - Math.PI / 2;
+    const endAngle = startAngle + anglePerSlice;
+    const x1 = radius + radius * Math.cos(startAngle);
+    const y1 = radius + radius * Math.sin(startAngle);
+    const x2 = radius + radius * Math.cos(endAngle);
+    const y2 = radius + radius * Math.sin(endAngle);
+
+    return `
+      M${radius},${radius}
+      L${x1},${y1}
+      A${radius},${radius} 0 0,1 ${x2},${y2}
+      Z
+    `;
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Pointer */}
+      <View style={{ alignItems: "center" }}>
+        <View
+          style={[
+            styles.pointer,
+            { transform: [{ rotate: "180deg" }], borderBottomColor: theme.tint },
+          ]}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Wheel */}
+      <Animated.View style={{ transform: [{ rotate: spin }] }}>
+        <Svg width={radius * 2} height={radius * 2}>
+          <G>
+            {prizes.map((prize, i) => {
+              const midAngle = (i + 0.5) * anglePerSlice - Math.PI / 2;
+              const textRadius = radius * 0.65;
+              const x = radius + textRadius * Math.cos(midAngle);
+              const y = radius + textRadius * Math.sin(midAngle);
+
+              return (
+                <React.Fragment key={i}>
+                  <Path
+                    d={createPath(i)}
+                    fill={i % 2 === 0 ? theme.tint : "#4caf50"}
+                    stroke={theme.background}
+                    strokeWidth={2}
+                  />
+                  <SvgText
+                    x={x}
+                    y={y}
+                    fill={theme.text}
+                    fontWeight="bold"
+                    fontSize={20}
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                  >
+                    {prize}
+                  </SvgText>
+                </React.Fragment>
+              );
+            })}
+          </G>
+        </Svg>
+      </Animated.View>
+
+      {/* Spin Button */}
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: theme.tint }]}
+        onPress={spinWheel}
+        disabled={spinning}
+      >
+        <Text style={styles.buttonText}>{spinning ? "Spinning..." : "SPIN"}</Text>
+      </TouchableOpacity>
+
+      {/* Result */}
+      {result && <Text style={[styles.result, { color: theme.text }]}>You won: {result}!</Text>}
+
+      {/* Links */}
+      <Link href="/auth/login" style={[styles.button, { backgroundColor: theme.tint }]}>
+        <Text style={styles.buttonText}>Go to Login</Text>
+      </Link>
+      <Link href="/auth/signup" style={[styles.button, { backgroundColor: theme.tint }]}>
+        <Text style={styles.buttonText}>Go to Signup</Text>
+      </Link>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  pointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 15,
+    borderRightWidth: 15,
+    borderBottomWidth: 30,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    marginBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  result: {
+    fontSize: 18,
+    marginTop: 20,
   },
 });
