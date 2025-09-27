@@ -1,27 +1,64 @@
-import React, { useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useRef, useState, useEffect } from "react";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { Link } from "expo-router";
 import { Colors } from "../../constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { fetchCategories, fetchMoods } from "../../services/activityService";
 
-const prizes = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
+const activities = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
 
 export default function AboutScreen() {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
 
-  const theme = Colors.light; // Choose dark or light
+  const [categories, setCategories] = useState<string[]>([]);
+  const [moods, setMoods] = useState<string[]>([]);
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+
+  const theme = Colors.light;
+
+  // Fetch categories & moods on mount
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const catData = await fetchCategories();
+        const moodData = await fetchMoods();
+        setCategories(catData.map((c) => c.categoryName));
+        setMoods(moodData.map((m) => m.moodName));
+      } catch (err) {
+        console.error("Error fetching filters:", err);
+      }
+    };
+    loadFilters();
+  }, []);
+
+  // Toggle selection helpers
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const toggleMood = (mood: string) => {
+    setSelectedMoods((prev) =>
+      prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]
+    );
+  };
 
   const spinWheel = () => {
     if (spinning) return;
     setSpinning(true);
     setResult(null);
 
-    const prizeIndex = Math.floor(Math.random() * prizes.length);
+    const activityIndex = Math.floor(Math.random() * activities.length);
     const turns = 5;
-    const angle = 360 / prizes.length;
-    const endDeg = 360 * turns + (360 - prizeIndex * angle) - angle / 2;
+    const angle = 360 / activities.length;
+    const endDeg = 360 * turns + (360 - activityIndex * angle) - angle / 2;
 
     Animated.timing(spinAnim, {
       toValue: endDeg,
@@ -30,7 +67,7 @@ export default function AboutScreen() {
       useNativeDriver: true,
     }).start(() => {
       setSpinning(false);
-      setResult(prizes[prizeIndex]);
+      setResult(activities[activityIndex]);
       spinAnim.setValue(endDeg % 360);
     });
   };
@@ -40,8 +77,8 @@ export default function AboutScreen() {
     outputRange: ["0deg", "360deg"],
   });
 
-  const radius = 200;
-  const anglePerSlice = (2 * Math.PI) / prizes.length;
+  const radius = 140;
+  const anglePerSlice = (2 * Math.PI) / activities.length;
 
   const createPath = (i: number) => {
     const startAngle = i * anglePerSlice - Math.PI / 2;
@@ -61,6 +98,54 @@ export default function AboutScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Top right filter button */}
+      <View style={styles.topRight}>
+        <TouchableOpacity onPress={() => setShowFilter(!showFilter)}>
+          <Ionicons name="filter" size={24} color={theme.icon} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Filter menu */}
+      {showFilter && (
+        <View style={styles.filterMenu}>
+          <Text style={{ color: theme.text, fontWeight: "bold", marginBottom: 10 }}>
+            Select Category:
+          </Text>
+          <ScrollView horizontal contentContainerStyle={styles.filterRow}>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.filterItem,
+                  selectedCategories.includes(cat) && { backgroundColor: "#f8d99d" },
+                ]}
+                onPress={() => toggleCategory(cat)}
+              >
+                <Text style={{ color: theme.text }}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <Text style={{ color: theme.text, fontWeight: "bold", marginBottom: 10 }}>
+            Select Mood:
+          </Text>
+          <ScrollView horizontal contentContainerStyle={styles.filterRow}>
+            {moods.map((mood) => (
+              <TouchableOpacity
+                key={mood}
+                style={[
+                  styles.filterItem,
+                  selectedMoods.includes(mood) && { backgroundColor: "#f8d99d" },
+                ]}
+                onPress={() => toggleMood(mood)}
+              >
+                <Text style={{ color: theme.text }}>{mood}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {/* Pointer */}
       <View style={{ alignItems: "center" }}>
         <View
@@ -75,7 +160,7 @@ export default function AboutScreen() {
       <Animated.View style={{ transform: [{ rotate: spin }] }}>
         <Svg width={radius * 2} height={radius * 2}>
           <G>
-            {prizes.map((prize, i) => {
+            {activities.map((activity, i) => {
               const midAngle = (i + 0.5) * anglePerSlice - Math.PI / 2;
               const textRadius = radius * 0.65;
               const x = radius + textRadius * Math.cos(midAngle);
@@ -98,7 +183,7 @@ export default function AboutScreen() {
                     textAnchor="middle"
                     alignmentBaseline="middle"
                   >
-                    {prize}
+                    {activity}
                   </SvgText>
                 </React.Fragment>
               );
@@ -123,9 +208,6 @@ export default function AboutScreen() {
       <Link href="/auth/login" style={[styles.button, { backgroundColor: theme.tint }]}>
         <Text style={styles.buttonText}>Go to Login</Text>
       </Link>
-      <Link href="/auth/signup" style={[styles.button, { backgroundColor: theme.tint }]}>
-        <Text style={styles.buttonText}>Go to Signup</Text>
-      </Link>
     </View>
   );
 }
@@ -135,6 +217,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  topRight: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 10,
+  },
+  filterMenu: {
+    position: "absolute",
+    top: 90,
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+  filterRow: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  filterItem: {
+    padding: 10,
+    backgroundColor: "#FCBF49",
+    borderRadius: 8,
+    marginRight: 10,
   },
   pointer: {
     width: 0,
