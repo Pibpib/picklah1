@@ -1,12 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView, useColorScheme } from "react-native";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { Link } from "expo-router";
 import { Colors } from "../../constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchCategories, fetchMoods } from "../../services/activityService";
-
-const activities = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
+import {fetchCategories, fetchMoods, fetchActivitiesFiltered, Activity, Category, Mood,} from "../../services/activityService";
 
 export default function AboutScreen() {
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -14,44 +12,56 @@ export default function AboutScreen() {
   const [result, setResult] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
 
-  const [categories, setCategories] = useState<string[]>([]);
-  const [moods, setMoods] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [moods, setMoods] = useState<Mood[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
 
-  const theme = Colors.light;
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
   // Fetch categories & moods on mount
   useEffect(() => {
     const loadFilters = async () => {
-      try {
-        const catData = await fetchCategories();
-        const moodData = await fetchMoods();
-        setCategories(catData.map((c) => c.categoryName));
-        setMoods(moodData.map((m) => m.moodName));
-      } catch (err) {
-        console.error("Error fetching filters:", err);
-      }
+      const catData = await fetchCategories();
+      const moodData = await fetchMoods();
+      setCategories(catData);
+      setMoods(moodData);
+
+      // Default select all
+      setSelectedCategories(catData.map((c) => c.id));
+      setSelectedMoods(moodData.map((m) => m.id));
     };
     loadFilters();
   }, []);
 
-  // Toggle selection helpers
-  const toggleCategory = (cat: string) => {
+  // Fetch filtered activities whenever filters change
+  useEffect(() => {
+    const loadActivities = async () => {
+      const filtered = await fetchActivitiesFiltered(selectedCategories, selectedMoods);
+      setActivities(filtered);
+    };
+    loadActivities();
+  }, [selectedCategories, selectedMoods]);
+
+  // Toggle helpers
+  const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
   };
 
-  const toggleMood = (mood: string) => {
+  const toggleMood = (id: string) => {
     setSelectedMoods((prev) =>
-      prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
     );
   };
 
+  // Spin wheel
   const spinWheel = () => {
-    if (spinning) return;
+    if (spinning || activities.length === 0) return;
     setSpinning(true);
     setResult(null);
 
@@ -67,7 +77,7 @@ export default function AboutScreen() {
       useNativeDriver: true,
     }).start(() => {
       setSpinning(false);
-      setResult(activities[activityIndex]);
+      setResult(activities[activityIndex].activityTitle);
       spinAnim.setValue(endDeg % 360);
     });
   };
@@ -78,7 +88,7 @@ export default function AboutScreen() {
   });
 
   const radius = 140;
-  const anglePerSlice = (2 * Math.PI) / activities.length;
+  const anglePerSlice = (2 * Math.PI) / (activities.length || 1);
 
   const createPath = (i: number) => {
     const startAngle = i * anglePerSlice - Math.PI / 2;
@@ -95,6 +105,11 @@ export default function AboutScreen() {
       Z
     `;
   };
+
+  // Placeholder if no activities
+  const displayActivities = activities.length > 0
+    ? activities
+    : [{ id: "none", activityTitle: "No activity", categoryId: "", moodId: "" }];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -114,14 +129,18 @@ export default function AboutScreen() {
           <ScrollView horizontal contentContainerStyle={styles.filterRow}>
             {categories.map((cat) => (
               <TouchableOpacity
-                key={cat}
+                key={cat.id}
                 style={[
                   styles.filterItem,
-                  selectedCategories.includes(cat) && { backgroundColor: "#f8d99d" },
+                  {
+                    backgroundColor: selectedCategories.includes(cat.id)
+                      ? theme.filterSelected
+                      : theme.filterDefault,
+                  },
                 ]}
-                onPress={() => toggleCategory(cat)}
+                onPress={() => toggleCategory(cat.id)}
               >
-                <Text style={{ color: theme.text }}>{cat}</Text>
+                <Text style={{ color: theme.text }}>{cat.categoryName}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -132,14 +151,18 @@ export default function AboutScreen() {
           <ScrollView horizontal contentContainerStyle={styles.filterRow}>
             {moods.map((mood) => (
               <TouchableOpacity
-                key={mood}
+                key={mood.id}
                 style={[
                   styles.filterItem,
-                  selectedMoods.includes(mood) && { backgroundColor: "#f8d99d" },
+                  {
+                    backgroundColor: selectedMoods.includes(mood.id)
+                      ? theme.filterSelected
+                      : theme.filterDefault,
+                  },
                 ]}
-                onPress={() => toggleMood(mood)}
+                onPress={() => toggleMood(mood.id)}
               >
-                <Text style={{ color: theme.text }}>{mood}</Text>
+                <Text style={{ color: theme.text }}>{mood.moodName}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -157,33 +180,33 @@ export default function AboutScreen() {
       </View>
 
       {/* Wheel */}
-      <Animated.View style={{ transform: [{ rotate: spin }] }}>
+      <Animated.View style={{ transform: [{ rotate: spin }], marginBottom: 30 }}>
         <Svg width={radius * 2} height={radius * 2}>
           <G>
-            {activities.map((activity, i) => {
+            {displayActivities.map((activity, i) => {
               const midAngle = (i + 0.5) * anglePerSlice - Math.PI / 2;
               const textRadius = radius * 0.65;
               const x = radius + textRadius * Math.cos(midAngle);
               const y = radius + textRadius * Math.sin(midAngle);
 
               return (
-                <React.Fragment key={i}>
+                <React.Fragment key={activity.id}>
                   <Path
                     d={createPath(i)}
-                    fill={i % 2 === 0 ? theme.tint : "#4caf50"}
-                    stroke={theme.background}
-                    strokeWidth={2}
+                    fill={i % 2 === 0 ? theme.tint : "#F77F00"}
+                    stroke={theme.icon}
+                    strokeWidth={1}
                   />
                   <SvgText
                     x={x}
                     y={y}
                     fill={theme.text}
                     fontWeight="bold"
-                    fontSize={20}
+                    fontSize={16}
                     textAnchor="middle"
                     alignmentBaseline="middle"
                   >
-                    {activity}
+                    {activity.activityTitle}
                   </SvgText>
                 </React.Fragment>
               );
@@ -194,11 +217,18 @@ export default function AboutScreen() {
 
       {/* Spin Button */}
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.tint }]}
+        style={[styles.button, { backgroundColor: theme.filterSelected }]}
         onPress={spinWheel}
-        disabled={spinning}
+        disabled={spinning || activities.length === 0}
       >
-        <Text style={styles.buttonText}>{spinning ? "Spinning..." : "SPIN"}</Text>
+        <Ionicons name="reload" size={18} color={theme.icon} />
+        <Text style={styles.buttonText}>
+          {spinning
+            ? "Spinning..."
+            : activities.length === 0
+            ? "No Activities"
+            : "SPIN"}
+        </Text>
       </TouchableOpacity>
 
       {/* Result */}
@@ -212,11 +242,13 @@ export default function AboutScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    paddingTop: "60%",
   },
   topRight: {
     position: "absolute",
@@ -235,9 +267,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   filterItem: {
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     backgroundColor: "#FCBF49",
-    borderRadius: 8,
+    borderRadius: 20,
     marginRight: 10,
   },
   pointer: {
@@ -251,15 +284,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    padding: 15,
+    flexDirection: "row",
+    paddingHorizontal: 80,
+    paddingVertical: 5,
     borderRadius: 8,
     marginTop: 10,
     alignItems: "center",
   },
   buttonText: {
-    color: "#fff",
+    paddingLeft: 5,
+    color: "#003049",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 20,
   },
   result: {
     fontSize: 18,
