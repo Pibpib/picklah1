@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView, useColorScheme } from "react-native";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView, useColorScheme, Alert } from "react-native";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { Link } from "expo-router";
 import { Colors } from "../../constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import Entypo from '@expo/vector-icons/Entypo';
 import {fetchCategories, fetchMoods, fetchActivitiesFiltered, Activity, Category, Mood,} from "../../services/activityService";
 
 export default function AboutScreen() {
@@ -79,6 +80,7 @@ export default function AboutScreen() {
       setSpinning(false);
       setResult(activities[activityIndex].activityTitle);
       spinAnim.setValue(endDeg % 360);
+      Alert.alert("Activity", `Let's ${activities[activityIndex].activityTitle}!`, [{ text: "OK" }]);
     });
   };
 
@@ -115,7 +117,7 @@ export default function AboutScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Top right filter button */}
       <View style={styles.topRight}>
-        <TouchableOpacity onPress={() => setShowFilter(!showFilter)}>
+        <TouchableOpacity onPress={() => setShowFilter(!showFilter)} style={{ marginTop: 10 }}>
           <Ionicons name="filter" size={24} color={theme.icon} />
         </TouchableOpacity>
       </View>
@@ -171,12 +173,7 @@ export default function AboutScreen() {
 
       {/* Pointer */}
       <View style={{ alignItems: "center" }}>
-        <View
-          style={[
-            styles.pointer,
-            { transform: [{ rotate: "180deg" }], borderBottomColor: theme.tint },
-          ]}
-        />
+        <Ionicons name="arrow-down-outline" size={30} color={theme.icon} />
       </View>
 
       {/* Wheel */}
@@ -221,7 +218,7 @@ export default function AboutScreen() {
         onPress={spinWheel}
         disabled={spinning || activities.length === 0}
       >
-        <Ionicons name="reload" size={18} color={theme.icon} />
+        <Entypo name="ccw" size={18} color={theme.icon} />
         <Text style={styles.buttonText}>
           {spinning
             ? "Spinning..."
@@ -230,9 +227,6 @@ export default function AboutScreen() {
             : "SPIN"}
         </Text>
       </TouchableOpacity>
-
-      {/* Result */}
-      {result && <Text style={[styles.result, { color: theme.text }]}>You won: {result}!</Text>}
 
       {/* Links */}
       <Link href="/auth/login" style={[styles.button, { backgroundColor: theme.tint }]}>

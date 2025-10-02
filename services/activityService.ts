@@ -17,7 +17,7 @@ export interface Activity {
   id: string;
   activityTitle: string;
   createBy: string;
-  moodId: string;
+  moodIds: string[];
   categoryId: string;
 }
 
@@ -50,24 +50,36 @@ export async function fetchActivitiesFiltered(
     const snapshot = await getDocs(collection(db, "Activity"));
     let activities: Activity[] = snapshot.docs.map((doc) => {
       const data = doc.data();
+
+      // Handle single or multiple mood references
+      let moodIds: string[] = [];
+      if (Array.isArray(data.moodID)) {
+        moodIds = data.moodID.map((m: any) => m.id); // array of refs
+      } else if (data.moodID) {
+        moodIds = [data.moodID.id]; // single ref
+      }
+
       return {
         id: doc.id,
         activityTitle: data.activityTitle,
         createBy: data.createBy,
-        // Extract the id string from DocumentReference, or fallback to empty string
-        moodId: data.moodID?.id || "",
+        moodIds,
         categoryId: data.categoryID?.id || "",
       };
     });
+
     console.log("Filtering activities with categories:", categoryIds, "and moods:", moodIds);
-    console.log("Total activities before filter:", activities.length);
-    // Apply AND filtering (activities must match both selected categories and moods if any)
+
+    // Filtering
     if (categoryIds.length > 0) {
       activities = activities.filter((a) => categoryIds.includes(a.categoryId));
     }
     if (moodIds.length > 0) {
-      activities = activities.filter((a) => moodIds.includes(a.moodId));
+      activities = activities.filter((a) =>
+        a.moodIds.some((m) => moodIds.includes(m)) // ✅ allow multiple moods
+      );
     }
+
     console.log("Total activities after filter:", activities.length);
     return activities;
   } catch (error) {
