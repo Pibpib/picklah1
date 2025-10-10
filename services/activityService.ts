@@ -16,7 +16,7 @@ export interface Mood {
 export interface Activity {
   id: string;
   activityTitle: string;
-  createBy: string;
+  createdBy: string;
   moodIds: string[];
   categoryId: string;
 }
@@ -62,7 +62,7 @@ export async function fetchActivitiesFiltered(
       return {
         id: doc.id,
         activityTitle: data.activityTitle,
-        createBy: data.createBy,
+        createdBy: data.createdBy,
         moodIds,
         categoryId: data.categoryID?.id || "",
       };

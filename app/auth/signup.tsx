@@ -5,11 +5,11 @@ import { auth } from "../../services/firebaseConfig";
 import { saveUserProfile } from "../../services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
-import { Colors } from "../../constants/theme"; // ✅ import theme
+import { Colors } from "../../constants/theme";
 
 export default function SignupScreen() {
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"]; // fallback to light mode
+  const theme = Colors[colorScheme ?? "light"]; 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,13 +65,13 @@ export default function SignupScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.title, { color: theme.text }]}>Sign Up</Text>
 
-      <Text style={{ textAlign: "center", marginBottom: 20, color: theme.icon }}>
+      <Text style={{ textAlign: "center", marginBottom: 20, color: theme.text }}>
         Create an account to get started!
       </Text>
 
       {/* Display Name */}
-      <View style={[styles.inputContainer, { borderColor: theme.icon }]}>
-        <Ionicons name="person-outline" size={20} color={theme.icon} style={styles.icon} />
+      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+        <Ionicons name="person-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Display Name"
           placeholderTextColor="#aaa"
@@ -82,8 +82,8 @@ export default function SignupScreen() {
       </View>
 
       {/* Email */}
-      <View style={[styles.inputContainer, { borderColor: theme.icon }]}>
-        <Ionicons name="mail-outline" size={20} color={theme.icon} style={styles.icon} />
+      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+        <Ionicons name="mail-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Email"
           placeholderTextColor="#aaa"
@@ -96,8 +96,8 @@ export default function SignupScreen() {
       </View>
 
       {/* Password */}
-      <View style={[styles.inputContainer, { borderColor: theme.icon }]}>
-        <Ionicons name="lock-closed-outline" size={20} color={theme.icon} style={styles.icon} />
+      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+        <Ionicons name="lock-closed-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#aaa"
@@ -110,14 +110,14 @@ export default function SignupScreen() {
           <Ionicons
             name={showPassword ? "eye-off-outline" : "eye-outline"}
             size={20}
-            color={theme.icon}
+            color={theme.text}
           />
         </TouchableOpacity>
       </View>
 
       {/* Confirm Password */}
-      <View style={[styles.inputContainer, { borderColor: theme.icon }]}>
-        <Ionicons name="lock-closed-outline" size={20} color={theme.icon} style={styles.icon} />
+      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+        <Ionicons name="lock-closed-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Confirm Password"
           placeholderTextColor="#aaa"
@@ -130,7 +130,7 @@ export default function SignupScreen() {
           <Ionicons
             name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
             size={20}
-            color={theme.icon}
+            color={theme.text}
           />
         </TouchableOpacity>
       </View>
@@ -142,7 +142,7 @@ export default function SignupScreen() {
 
       {/* ✅ Sign in link */}
       <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 20 }}>
-        <Text style={{ color: theme.icon }}>Already have an account? </Text>
+        <Text style={{ color: theme.text }}>Already have an account? </Text>
         <Link href="/auth/login" style={{ color: theme.tint, fontWeight: "600" }}>
           Sign In
         </Link>
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 15,
-    backgroundColor: "#f3f1e9",
+    backgroundColor: "#f9f9f9",
   },
   icon: {
     marginRight: 8,

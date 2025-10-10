@@ -24,7 +24,7 @@ export default function LoginScreen() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/"); // navigate to home page
+      router.replace("/(tabs)"); 
     } catch (error: any) {
       Alert.alert("⚠️ Error", error.message);
     }
@@ -33,13 +33,13 @@ export default function LoginScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.title, { color: theme.text }]}>Login</Text>
-      <Text style={{ textAlign: "center", marginBottom: 20, color: theme.icon }}>
+      <Text style={{ textAlign: "center", marginBottom: 20, color: theme.text }}>
         Welcome back! Please login to continue.
       </Text>
 
       {/* Email */}
-      <View style={[styles.inputContainer, { borderColor: theme.icon }]}>
-        <Ionicons name="mail-outline" size={20} color={theme.icon} style={styles.icon} />
+      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+        <Ionicons name="mail-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Email"
           placeholderTextColor="#aaa"
@@ -52,8 +52,8 @@ export default function LoginScreen() {
       </View>
 
       {/* Password */}
-      <View style={[styles.inputContainer, { borderColor: theme.icon }]}>
-        <Ionicons name="lock-closed-outline" size={20} color={theme.icon} style={styles.icon} />
+      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+        <Ionicons name="lock-closed-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#aaa"
@@ -66,7 +66,7 @@ export default function LoginScreen() {
           <Ionicons
             name={showPassword ? "eye-off-outline" : "eye-outline"}
             size={20}
-            color={theme.icon}
+            color={theme.text}
           />
         </TouchableOpacity>
       </View>
@@ -83,7 +83,7 @@ export default function LoginScreen() {
 
       {/* Go to Sign Up */}
       <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 20 }}>
-        <Text style={{ color: theme.icon }}>Don't have an account? </Text>
+        <Text style={{ color: theme.text }}>Don't have an account? </Text>
         <Link href="/auth/signup" style={{ color: theme.tint, fontWeight: "600" }}>
           Sign Up
         </Link>

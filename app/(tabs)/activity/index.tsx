@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, FlatList, ActivityIndicator, useColorScheme } from "react-native";
+import {StyleSheet, FlatList, ActivityIndicator, useColorScheme, TouchableOpacity, View, ScrollView, Text,} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "../../../constants/theme";
@@ -13,17 +14,41 @@ import {
 } from "../../../services/activityService";
 
 export default function ActivityTab() {
-  const colorScheme = useColorScheme(); // detects light or dark mode
-  const theme = Colors[colorScheme ?? "light"]; // fallback to light
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Filter states
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [moods, setMoods] = useState<Mood[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+
+  // Fetch categories & moods on mount
+  useEffect(() => {
+    const loadFilters = async () => {
+      const catData = await fetchCategories();
+      const moodData = await fetchMoods();
+      setCategories(catData);
+      setMoods(moodData);
+
+      // Default: select all
+      setSelectedCategories(catData.map((c) => c.id));
+      setSelectedMoods(moodData.map((m) => m.id));
+    };
+    loadFilters();
+  }, []);
+
+  // Fetch activities whenever filters change
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       try {
         const [activityList, categoryList, moodList] = await Promise.all([
-          fetchActivitiesFiltered(),
+          fetchActivitiesFiltered(selectedCategories, selectedMoods),
           fetchCategories(),
           fetchMoods(),
         ]);
@@ -50,7 +75,20 @@ export default function ActivityTab() {
     };
 
     loadData();
-  }, []);
+  }, [selectedCategories, selectedMoods]);
+
+  // Toggle helpers
+  const toggleCategory = (id: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+  };
+
+  const toggleMood = (id: string) => {
+    setSelectedMoods((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+    );
+  };
 
   const renderCard = ({ item }: any) => (
     <ThemedView style={[styles.card, { backgroundColor: theme.filterDefault }]}>
@@ -76,11 +114,66 @@ export default function ActivityTab() {
   }
 
   return (
-    <ThemedView style={[{ flex: 1, padding: 16, backgroundColor: theme.background }]}>
-      <ThemedText type="title" style={[styles.title, { color: theme.text }]}>
-        Activities
-      </ThemedText>
+    <ThemedView style={[{ flex: 1, backgroundColor: theme.background }]}>
+      <View style={styles.topBar}>
+        <ThemedText type="title" style={[styles.title, { color: theme.text }]}>
+          Activities
+        </ThemedText>
+        <TouchableOpacity onPress={() => setShowFilter(!showFilter)}>
+          <Ionicons name="filter" size={24} color={theme.text} />
+        </TouchableOpacity>
+      </View>
 
+      {/* Filter menu */}
+      {showFilter && (
+        <View style={styles.filterMenu}>
+          <Text style={{ color: theme.text, fontWeight: "bold", marginBottom: 10 }}>
+            Select Category:
+          </Text>
+          <ScrollView horizontal contentContainerStyle={styles.filterRow}>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                style={[
+                  styles.filterItem,
+                  {
+                    backgroundColor: selectedCategories.includes(cat.id)
+                      ? theme.filterSelected
+                      : theme.filterDefault,
+                  },
+                ]}
+                onPress={() => toggleCategory(cat.id)}
+              >
+                <Text style={{ color: theme.text }}>{cat.categoryName}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <Text style={{ color: theme.text, fontWeight: "bold", marginBottom: 10 }}>
+            Select Mood:
+          </Text>
+          <ScrollView horizontal contentContainerStyle={styles.filterRow}>
+            {moods.map((mood) => (
+              <TouchableOpacity
+                key={mood.id}
+                style={[
+                  styles.filterItem,
+                  {
+                    backgroundColor: selectedMoods.includes(mood.id)
+                      ? theme.filterSelected
+                      : theme.filterDefault,
+                  },
+                ]}
+                onPress={() => toggleMood(mood.id)}
+              >
+                <Text style={{ color: theme.text }}>{mood.moodName}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Activities list */}
       <FlatList
         data={activities}
         keyExtractor={(item) => item.id}
@@ -97,12 +190,13 @@ export default function ActivityTab() {
 const styles = StyleSheet.create({
   listContainer: {
     gap: 12,
+    padding: 16,
     paddingTop: 12,
   },
   cardTitle: {
     fontWeight: "600",
     fontSize: 20,
-    },
+  },
   card: {
     borderRadius: 12,
     padding: 16,
@@ -112,17 +206,38 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   title: {
-    marginTop: 35,
-    fontWeight: "600",
-    marginBottom: 6,
+    fontWeight: "700",
+    fontSize: 22,
   },
   subtitle: {
     fontSize: 14,
-    opacity: 0.7,
+    opacity: 0.8,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 10,
+  },
+  filterMenu: {
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  filterRow: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  filterItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 10,
   },
 });
