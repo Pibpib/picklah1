@@ -15,6 +15,7 @@ export interface Mood {
 
 export interface Activity {
   id: string;
+  description?: string;
   activityTitle: string;
   createdBy: string;
   moodIds: string[];
@@ -62,13 +63,12 @@ export async function fetchActivitiesFiltered(
       return {
         id: doc.id,
         activityTitle: data.activityTitle,
+        description: data.description,
         createdBy: data.createdBy,
         moodIds,
         categoryId: data.categoryID?.id || "",
       };
     });
-
-    console.log("Filtering activities with categories:", categoryIds, "and moods:", moodIds);
 
     // Filtering
     if (categoryIds.length > 0) {
@@ -76,7 +76,7 @@ export async function fetchActivitiesFiltered(
     }
     if (moodIds.length > 0) {
       activities = activities.filter((a) =>
-        a.moodIds.some((m) => moodIds.includes(m)) // ✅ allow multiple moods
+        a.moodIds.some((m) => moodIds.includes(m)) //   allow multiple moods
       );
     }
 

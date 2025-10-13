@@ -12,15 +12,16 @@ export const Colors = {
   light: {
     text: '#003049',
     background: '#FFFFFF',
-    tint: tintColorLight,
-    tabIconSelected: '#FEDFA4',
+    main: '#FCBF49',
+    tint: '#F77F00',
+    mainlight: '#FEDFA4',
     accent:'#f8d99d',
 
-    borderlight:'#E7E7E7',
+    border:'#E7E7E7',
     borderbold:'#8D8D8D',
-    borderaccent:'#fbc684',
+    bordertint:'#fbc684',
     filterDefault: '#EFEFEF',
-    filterSelected: '#FCBF49',
+    
   },
   dark: {
     text: '#EAE2B7',
@@ -28,7 +29,13 @@ export const Colors = {
     tint: tintColorDark,
     icon: '#EAE2B7',
     tabIconDefault: '#EAE2B7',
-    tabIconSelected: tintColorDark,
+    mainlight: tintColorDark,
+    main: '#FCBF49',
+    accent:'#f8d99d',
+    
+    border:'#5A5A5A',
+    borderbold:'#CFCFCF',
+    bordertint:'#fbc684',
 
     filterDefault: '#fcbf49',
     filterSelected: '#F77F00',

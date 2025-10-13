@@ -17,7 +17,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: theme.text,
         tabBarInactiveTintColor: theme.text,
-        tabBarActiveBackgroundColor: theme.tabIconSelected, 
+        tabBarActiveBackgroundColor: theme.mainlight, 
         tabBarStyle: {
           height:50,
         },
@@ -33,17 +33,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="activity/index"
+        name="manage/index1"
         options={{
-          title: 'Activities',
+          title: 'Manage',
           tabBarIcon: ({ color }) => <Feather size={28} name="edit" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
     </Tabs>

@@ -209,7 +209,7 @@ useEffect(() => {
       {/* Filter menu */}
       {showFilter && (
         <View style={[styles.filterMenu, { backgroundColor: theme.filterDefault, borderColor: theme.borderbold, borderWidth: 1 }]}>
-          <Text style={{ color: theme.text, marginBottom: 5, fontSize: 14 }}>
+          <Text style={{ color: theme.text, marginBottom: 4, fontSize: 14 }}>
             Category
           </Text>
           <ScrollView horizontal contentContainerStyle={styles.filterRow}>
@@ -222,9 +222,9 @@ useEffect(() => {
                     styles.filterItem,
                     {
                       backgroundColor: isSelected
-                        ? theme.filterSelected
+                        ? theme.main
                         : theme.filterDefault,
-                      borderColor: isSelected ? theme.filterSelected : theme.borderbold,
+                      borderColor: isSelected ? theme.main : theme.borderbold,
                       borderWidth: 1,
                     },
                   ]}
@@ -244,7 +244,7 @@ useEffect(() => {
             })}
           </ScrollView>
 
-          <Text style = {{ color: theme.text, marginBottom: 5, fontSize: 14, marginTop: 10 }}>
+          <Text style = {{ color: theme.text, marginBottom: 4, fontSize: 14}}>
             Mood
           </Text>
           <ScrollView horizontal contentContainerStyle={styles.filterRow}>
@@ -257,9 +257,9 @@ useEffect(() => {
                     styles.filterItem,
                     {
                       backgroundColor: isSelected
-                        ? theme.filterSelected
+                        ? theme.main
                         : theme.filterDefault,
-                      borderColor: isSelected ? theme.filterSelected : theme.borderbold,
+                      borderColor: isSelected ? theme.main : theme.borderbold,
                       borderWidth: 1,
                     },
                   ]}
@@ -300,7 +300,7 @@ useEffect(() => {
                 <React.Fragment key={activity.id}>
                   <Path
                     d={createPath(i)}
-                    fill={i % 2 === 0 ? theme.tint : theme.tabIconSelected}
+                    fill={i % 2 === 0 ? theme.tint : theme.mainlight}
                     stroke={theme.text}
                     strokeWidth={1}
                   />
@@ -324,7 +324,7 @@ useEffect(() => {
 
       {/* Spin Button */}
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.filterSelected }]}
+        style={[styles.button, { backgroundColor: theme.main }]}
         onPress={spinWheel}
         disabled={spinning || activities.length === 0}
       >

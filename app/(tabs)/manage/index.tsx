@@ -117,7 +117,7 @@ export default function ActivityTab() {
     <ThemedView style={[{ flex: 1, backgroundColor: theme.background }]}>
       <View style={styles.topBar}>
         <ThemedText type="title" style={[styles.title, { color: theme.text }]}>
-          Activities
+          Manage
         </ThemedText>
         <TouchableOpacity onPress={() => setShowFilter(!showFilter)}>
           <Ionicons name="filter" size={24} color={theme.text} />
@@ -138,7 +138,7 @@ export default function ActivityTab() {
                   styles.filterItem,
                   {
                     backgroundColor: selectedCategories.includes(cat.id)
-                      ? theme.filterSelected
+                      ? theme.main
                       : theme.filterDefault,
                   },
                 ]}
@@ -160,7 +160,7 @@ export default function ActivityTab() {
                   styles.filterItem,
                   {
                     backgroundColor: selectedMoods.includes(mood.id)
-                      ? theme.filterSelected
+                      ? theme.main
                       : theme.filterDefault,
                   },
                 ]}
