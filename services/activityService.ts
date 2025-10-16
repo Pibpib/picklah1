@@ -5,12 +5,16 @@ export interface Category {
   id: string;
   categoryName: string;
   accessLevel: string;
+  createdBy: string;
+  description?: string;
 }
 
 export interface Mood {
   id: string;
   moodName: string;
   accessLevel: string;
+  createdBy: string;
+  description?: string;
 }
 
 export interface Activity {
@@ -29,6 +33,8 @@ export async function fetchCategories(): Promise<Category[]> {
     id: doc.id,
     categoryName: doc.data().categoryName,
     accessLevel: doc.data().accessLevel,
+    createdBy: doc.data().createdBy,
+    description: doc.data().description,
   }));
 }
 
@@ -39,6 +45,8 @@ export async function fetchMoods(): Promise<Mood[]> {
     id: doc.id,
     moodName: doc.data().moodName,
     accessLevel: doc.data().accessLevel,
+    createdBy: doc.data().createdBy,
+    description: doc.data().description,
   }));
 }
 

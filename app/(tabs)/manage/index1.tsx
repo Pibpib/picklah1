@@ -7,12 +7,12 @@ import {
   View,
   Text,
   Dimensions,
-  Modal,
+  Modal
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../../services/firebaseConfig";
-import { getUserProfile, getUserSubscription } from "../../../services/userService";
+import { getUserSubscription } from "../../../services/userService";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "../../../constants/theme";
@@ -24,8 +24,6 @@ import {
   Category,
   Mood,
 } from "../../../services/activityService";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../services/firebaseConfig";
 
 export default function ActivityTab() {
   const colorScheme = "light";
@@ -34,7 +32,9 @@ export default function ActivityTab() {
   const [user, setUser] = useState<any>(null);
   const [userPlan, setUserPlan] = useState<"free" | "premium">("free");
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState<"activity" | "category" | "mood">("activity");
+  const [selectedTab, setSelectedTab] = useState<
+    "activity" | "category" | "mood"
+  >("activity");
   const [activities, setActivities] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [moods, setMoods] = useState<Mood[]>([]);
@@ -43,15 +43,11 @@ export default function ActivityTab() {
   // 🔹 Auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("Auth state changed:", currentUser);
-
       if (currentUser) {
         setUser(currentUser);
-        const profileData = await getUserProfile(currentUser.uid);
         const subscription = await getUserSubscription(currentUser.uid);
         const planType = subscription?.planType || "free";
         setUserPlan(planType);
-        console.log("User plan type:", planType);
       } else {
         setUser(null);
         setUserPlan("free");
@@ -61,23 +57,17 @@ export default function ActivityTab() {
     return () => unsubscribe();
   }, []);
 
-  // 🔹 Load data based on selected tab + plan
+  // 🔹 Load data
   useEffect(() => {
-    if (userPlan) {
-      loadData();
-    }
+    if (userPlan) loadData();
   }, [selectedTab, userPlan]);
 
   async function loadData() {
     setLoading(true);
     try {
-      if (selectedTab === "activity") {
-        await loadActivities();
-      } else if (selectedTab === "category") {
-        await loadCategories();
-      } else if (selectedTab === "mood") {
-        await loadMoods();
-      }
+      if (selectedTab === "activity") await loadActivities();
+      else if (selectedTab === "category") await loadCategories();
+      else if (selectedTab === "mood") await loadMoods();
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -87,57 +77,57 @@ export default function ActivityTab() {
 
   // 🔹 Load Activities
   async function loadActivities() {
-    const acts = await fetchActivitiesFiltered();
-    const filteredActs: any[] = [];
+    const catData = await fetchCategories();
+    const moodData = await fetchMoods();
+    const allActivities = await fetchActivitiesFiltered();
 
-    for (const a of acts) {
-      // Fetch category + moods data
-      const categoryDoc = a.categoryId ? await getDoc(doc(db, "Category", a.categoryId)) : null;
-      const categoryData = categoryDoc?.data();
+    let filteredActivities = allActivities;
 
-      const moodNames: string[] = [];
-      for (const moodId of a.moodIds) {
-        const moodDoc = await getDoc(doc(db, "Mood", moodId));
-        const moodData = moodDoc.data();
-        if (moodData) moodNames.push(moodData.moodName);
-      }
-
-      // Apply filtering by user plan
-      if (userPlan === "premium") {
-        if (a.createdBy === "system" || a.createdBy === user?.uid) {
-          if (categoryData?.accessLevel === "premium") {
-            filteredActs.push({ ...a, categoryName: categoryData.categoryName, moodNames });
-          }
-        }
-      } else {
-        if (a.createdBy === "system" && categoryData?.accessLevel === "free") {
-          filteredActs.push({ ...a, categoryName: categoryData.categoryName, moodNames });
-        }
-      }
+    if (userPlan === "free") {
+      filteredActivities = allActivities.filter((a) => {
+        const category = catData.find((c) => c.id === a.categoryId);
+        const moodAccess = a.moodIds.map(
+          (mid) => moodData.find((m) => m.id === mid)?.accessLevel
+        );
+        const allMoodsFree = moodAccess.every((lvl) => lvl === "free");
+        const isCategoryFree = category?.accessLevel === "free";
+        const isSystemActivity = a.createdBy === "system";
+        return isSystemActivity && isCategoryFree && allMoodsFree;
+      });
+    } else {
+      filteredActivities = allActivities.filter(
+        (a) => a.createdBy === "system" || a.createdBy === user?.uid
+      );
     }
 
-    console.log("Filtered activities:", filteredActs.length);
-    setActivities(filteredActs);
+    // Attach categoryName and moodNames
+    const activitiesWithDetails = filteredActivities.map((a) => {
+      const cat = catData.find((c) => c.id === a.categoryId);
+      const moodNames = a.moodIds
+        .map((mid) => moodData.find((m) => m.id === mid)?.moodName)
+        .filter(Boolean) as string[];
+      return {
+        ...a,
+        categoryName: cat?.categoryName || "Uncategorized",
+        moodNames,
+      };
+    });
+
+    setActivities(activitiesWithDetails);
   }
 
-  // 🔹 Load Categories
   async function loadCategories() {
     const cats = await fetchCategories();
-    if (userPlan === "premium") {
+    if (userPlan === "premium")
       setCategories(cats.filter((c) => c.accessLevel === "premium"));
-    } else {
-      setCategories(cats.filter((c) => c.accessLevel === "free"));
-    }
+    else setCategories(cats.filter((c) => c.accessLevel === "free"));
   }
 
-  // 🔹 Load Moods
   async function loadMoods() {
     const mds = await fetchMoods();
-    if (userPlan === "premium") {
+    if (userPlan === "premium")
       setMoods(mds.filter((m) => m.accessLevel === "premium"));
-    } else {
-      setMoods(mds.filter((m) => m.accessLevel === "free"));
-    }
+    else setMoods(mds.filter((m) => m.accessLevel === "free"));
   }
 
   const renderList = () => {
@@ -150,16 +140,49 @@ export default function ActivityTab() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={[styles.card, { borderColor: theme.border }]}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>{item.activityTitle}</Text>
+              {/* 🔹 Title Row */}
+              <View style={styles.titleRow}>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>
+                  {item.activityTitle}
+                </Text>
+                <View
+                  style={[styles.categoryBadge, { backgroundColor: theme.main }]}
+                >
+                  <Text
+                    style={[styles.categoryText, { color: theme.text }]}
+                  >
+                    {item.categoryName}
+                  </Text>
+                </View>
+              </View>
+
+              {/* 🔹 Description */}
               {item.description && (
-                <Text style={[styles.subtitle, { color: theme.text }]}>{item.description}</Text>
+                <Text style={[styles.subtitle, { color: theme.text }]}>
+                  {item.description}
+                </Text>
               )}
-              <Text style={[styles.subtitle, { color: theme.text }]}>
-                Category: {item.categoryName || "N/A"}
-              </Text>
-              <Text style={[styles.subtitle, { color: theme.text }]}>
-                Moods: {item.moodNames?.join(", ") || "N/A"}
-              </Text>
+
+              {/* 🔹 Moods */}
+              {item.moodNames && item.moodNames.length > 0 && (
+                <View style={styles.moodRow}>
+                  {item.moodNames.map((mood:string, index:number) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.categoryBadge,
+                        { backgroundColor: theme.mainlight, borderColor: theme.bordertint, borderWidth: 1,marginRight: 10 },
+                      ]}
+                    >
+                      <Text
+                        style={[{fontSize: 10} ]}
+                      >
+                        {mood}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
         />
@@ -171,7 +194,9 @@ export default function ActivityTab() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={[styles.card, { borderColor: theme.border }]}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>{item.categoryName}</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                {item.categoryName}
+              </Text>
               <Text style={[styles.subtitle, { color: theme.text }]}>
                 Access: {item.accessLevel}
               </Text>
@@ -186,7 +211,9 @@ export default function ActivityTab() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={[styles.card, { borderColor: theme.border }]}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>{item.moodName}</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                {item.moodName}
+              </Text>
               <Text style={[styles.subtitle, { color: theme.text }]}>
                 Access: {item.accessLevel}
               </Text>
@@ -218,81 +245,54 @@ export default function ActivityTab() {
           Manage
         </ThemedText>
         <TouchableOpacity onPress={handleAddPress}>
-          <Ionicons name="add" size={24} color={theme.text} />
+          <Ionicons name="add" size={24} color={theme.tint} />
         </TouchableOpacity>
       </View>
 
-        {/* Tab Buttons */}
-        <View
-            style={[
-                styles.tabRow,
-                { backgroundColor: theme.border },
-            ]}
-            >
-            <TouchableOpacity
-                style={[
-                styles.tabButton,
-                {
-                    backgroundColor:
-                    selectedTab === "activity" ? theme.main : theme.border,
-                },
-                ]}
-                onPress={() => setSelectedTab("activity")}
-            >
-                <Ionicons name="list" size={22} color= {theme.text} style={{ marginBottom: 4 }}/>
-                <Text
-                style={[
-                    styles.tabText,
-                    { color: theme.text},
-                ]}
-                >
-                Activity
-                </Text>
-            </TouchableOpacity>
+      {/* Tab Buttons */}
+      <View style={[styles.tabRow, { backgroundColor: theme.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            {
+              backgroundColor:
+                selectedTab === "activity" ? theme.main : theme.border,
+            },
+          ]}
+          onPress={() => setSelectedTab("activity")}
+        >
+          <Ionicons name="list" size={22} color={theme.text} style={{ marginBottom: 4 }} />
+          <Text style={[styles.tabText, { color: theme.text }]}>Activity</Text>
+        </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[
-                styles.tabButton,
-                {
-                    backgroundColor:
-                    selectedTab === "category" ? theme.main : theme.border,
-                },
-                ]}
-                onPress={() => setSelectedTab("category")}
-            >
-                <Ionicons name="folder-outline" size={22} color= {theme.text} style={{ marginBottom: 4 }}/>
-                <Text
-                style={[
-                    styles.tabText,
-                    { color: theme.text},
-                ]}
-                >
-                Category
-                </Text>
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            {
+              backgroundColor:
+                selectedTab === "category" ? theme.main : theme.border,
+            },
+          ]}
+          onPress={() => setSelectedTab("category")}
+        >
+          <Ionicons name="folder-outline" size={22} color={theme.text} style={{ marginBottom: 4 }} />
+          <Text style={[styles.tabText, { color: theme.text }]}>Category</Text>
+        </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[
-                styles.tabButton,
-                {
-                    backgroundColor:
-                    selectedTab === "mood" ? theme.main : theme.border,
-                },
-                ]}
-                onPress={() => setSelectedTab("mood")}
-            >
-                <Ionicons name="happy-outline" size={22} color= {theme.text} style={{ marginBottom: 4 }}/>
-                <Text
-                style={[
-                    styles.tabText,
-                    { color: theme.text},
-                ]}
-                >
-                Mood
-                </Text>
-            </TouchableOpacity>
-        </View>
-
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            {
+              backgroundColor:
+                selectedTab === "mood" ? theme.main : theme.border,
+            },
+          ]}
+          onPress={() => setSelectedTab("mood")}
+        >
+          <Ionicons name="happy-outline" size={22} color={theme.text} style={{ marginBottom: 4 }} />
+          <Text style={[styles.tabText, { color: theme.text }]}>Mood</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Data List */}
       <View style={{ flex: 1, padding: 10 }}>{renderList()}</View>
@@ -326,6 +326,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontWeight: "600",
     fontSize: 16,
+    marginBottom: 4,
   },
   card: {
     borderRadius: 10,
@@ -335,12 +336,34 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    borderWidth: 1, },
+    borderWidth: 1,
+  },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  categoryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  moodRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 6,
+    marginBottom: 4,
+  },
   title: {
     fontWeight: "700",
     fontSize: 22,
   },
   subtitle: {
+    marginBottom: 4,
     fontSize: 12,
     opacity: 0.8,
   },
@@ -358,10 +381,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 20,
     marginHorizontal: 16,
-    paddingVertical: 4
+    paddingVertical: 4,
   },
   tabButton: {
-    width: screenWidth * 0.3-4,
+    width: screenWidth * 0.3 - 4,
     paddingVertical: 8,
     borderRadius: 20,
     alignItems: "center",
