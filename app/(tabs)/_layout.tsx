@@ -2,11 +2,10 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import Feather from '@expo/vector-icons/Feather';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import Feather from '@expo/vector-icons/Feather';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -33,7 +32,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="manage/index1"
+        name="manage/index"
         options={{
           title: 'Manage',
           tabBarIcon: ({ color }) => <Feather size={28} name="edit" color={color} />,

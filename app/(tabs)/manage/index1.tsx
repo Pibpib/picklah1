@@ -1,29 +1,28 @@
-import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  TouchableOpacity,
-  View,
-  Text,
-  Dimensions,
-  Modal
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../../services/firebaseConfig";
-import { getUserSubscription } from "../../../services/userService";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Ionicons } from "@expo/vector-icons";
+import { onAuthStateChanged } from "firebase/auth";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 import { Colors } from "../../../constants/theme";
 import {
+  Category,
   fetchActivitiesFiltered,
   fetchCategories,
   fetchMoods,
-  Activity,
-  Category,
-  Mood,
+  Mood
 } from "../../../services/activityService";
+import { auth } from "../../../services/firebaseConfig";
+import { getUserSubscription } from "../../../services/userService";
 
 export default function ActivityTab() {
   const colorScheme = "light";
