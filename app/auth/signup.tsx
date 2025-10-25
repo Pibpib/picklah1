@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, useColorScheme,} from "react-native";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { auth } from "../../services/firebaseConfig";
 import { saveUserProfile } from "../../services/userService";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,8 +41,13 @@ export default function SignupScreen() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await updateProfile(user, { displayName });
+      await sendEmailVerification(user);
+      Alert.alert(
+        "📩 Verify Your Email",
+        "We’ve sent a verification link to your email address. Please verify your account before signing in."
+      );
 
+      await updateProfile(user, { displayName });
       await saveUserProfile(user.uid, {
         displayName,
         photoURL: null,
