@@ -18,6 +18,7 @@ import { Colors } from "../../../constants/theme";
 import {
   Activity,
   Category,
+  createActivity,
   fetchActivitiesFiltered,
   fetchCategories,
   fetchMoods,
@@ -34,6 +35,19 @@ export default function ActivityTab() {
   // minimal modal form state (kept local to this screen)
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
+  const [newMoodIds, setNewMoodIds] = useState<string[]>([]);
+
+  const toggleNewMood = (id: string) => {
+    setNewMoodIds(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+  };
+
+  const resetCreateForm = () => {
+    setNewTitle("");
+    setNewDesc("");
+    setNewCategoryId(null);
+    setNewMoodIds([]);
+  };
 
   // Data state
   const [loading, setLoading] = useState(true);
@@ -178,6 +192,42 @@ export default function ActivityTab() {
     );
   };
 
+  const handleCreateActivity = async () => {
+    if (!newTitle || !newCategoryId || newMoodIds.length === 0) return;
+  
+    try {
+      const created = await createActivity({
+        activityTitle: newTitle,
+        description: newDesc,
+        categoryId: newCategoryId,
+        moodIds: newMoodIds,
+      });
+  
+      const catName =
+        categories.find((c) => c.id === newCategoryId)?.categoryName || "Uncategorized";
+      const moodNames = newMoodIds
+        .map((mid) => moods.find((m) => m.id === mid)?.moodName || "")
+        .filter(Boolean) as string[];
+  
+      const mapped = {
+        id: created?.id ?? String(Date.now()),
+        activityTitle: created?.activityTitle ?? newTitle,
+        description: created?.description ?? newDesc,
+        categoryId: newCategoryId,
+        moodIds: newMoodIds,
+        categoryName: catName,
+        moodNames,
+      } as any;
+  
+      setActivities((prev) => [mapped, ...prev]);
+    } catch (e) {
+      console.error("Failed to create activity", e);
+    } finally {
+      setModalVisible(false);
+      resetCreateForm();
+    }
+  };
+
   return (
     <ThemedView style={[{ flex: 1, backgroundColor: theme.background }]}> 
       {/* Top Bar */}
@@ -236,7 +286,7 @@ export default function ActivityTab() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{getModalTitle()}</Text>
+            {/* Removed modal title line as per instructions */}
             {/* Simple form inside current modal (no other code touched) */}
             {selectedTab === 'activity' && (
               <>
@@ -253,12 +303,55 @@ export default function ActivityTab() {
                   multiline
                   style={{ width: '100%', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, minHeight: 70, marginBottom: 8 }}
                 />
-                <TouchableOpacity
-                  onPress={() => { /* stub: add your create handler here */ setModalVisible(false); setNewTitle(""); setNewDesc(""); }}
-                  style={{ alignSelf: 'flex-end', backgroundColor: '#333', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginBottom: 10 }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '600' }}>Create</Text>
-                </TouchableOpacity>
+
+                {/* Category (single-select from Firebase) */}
+                <Text style={styles.sectionLabel}>Category</Text>
+                <View style={styles.wrapRow}>
+                  {categories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[styles.chipOutline, newCategoryId === cat.id && styles.chipSelected]}
+                      onPress={() => setNewCategoryId(cat.id)}
+                    >
+                      <Text style={styles.chipText}>{cat.categoryName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Mood (multi-select from Firebase) */}
+                <Text style={styles.sectionLabel}>Mood</Text>
+                <View style={styles.wrapRow}>
+                  {moods.map((m) => (
+                    <TouchableOpacity
+                      key={m.id}
+                      style={[styles.chipOutline, newMoodIds.includes(m.id) && styles.chipSelected]}
+                      onPress={() => toggleNewMood(m.id)}
+                    >
+                      <Text style={styles.chipText}>{m.moodName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Footer buttons */}
+                <View style={styles.footerRow}>
+                  <TouchableOpacity
+                    onPress={() => { setModalVisible(false); resetCreateForm(); }}
+                    style={styles.btnCancel}
+                  >
+                    <Text style={styles.btnCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => { handleCreateActivity; setModalVisible(false); resetCreateForm(); }}
+                    disabled={!newTitle || !newCategoryId || newMoodIds.length === 0}
+                    style={[
+                      styles.btnCreate,
+                      (!newTitle || !newCategoryId || newMoodIds.length === 0) && { opacity: 0.6 },
+                    ]}
+                  >
+                    <Text style={styles.btnCreateText}>Create</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 
@@ -295,10 +388,7 @@ export default function ActivityTab() {
                 </TouchableOpacity>
               </>
             )}
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-              <Text style={{ color: "#fff" }}>Close</Text>
-            </TouchableOpacity>
-          </View>
+           </View>
         </View>
       </Modal>
     </ThemedView>
@@ -392,16 +482,71 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
-  closeButton: {
+    closeButton: {
     marginTop: 20,
     backgroundColor: "#333",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+  },
+  sectionLabel: {
+    alignSelf: 'flex-start',
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  chipOutline: {
+    borderWidth: 1,
+    borderColor: '#AEB7C2',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
+  chipSelected: {
+    backgroundColor: '#F2F4F7',
+  },
+  chipText: {
+    fontWeight: '700',
+    color: '#1F2A3B',
+  },
+  wrapRow: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 12,
+  },
+  footerRow: {
+    marginTop: 8,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  btnCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#AEB7C2',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  btnCancelText: {
+    fontWeight: '800',
+    fontSize: 18,
+    color: '#1F2A3B',
+  },
+  btnCreate: {
+    flex: 1,
+    backgroundColor: '#F2B94B',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  btnCreateText: {
+    fontWeight: '800',
+    fontSize: 18,
+    color: '#1A1A1A',
   },
 });
