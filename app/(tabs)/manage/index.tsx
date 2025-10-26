@@ -286,8 +286,7 @@ export default function ActivityTab() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* Removed modal title line as per instructions */}
-            {/* Simple form inside current modal (no other code touched) */}
+         
             {selectedTab === 'activity' && (
               <>
                 <TextInput
