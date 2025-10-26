@@ -2,13 +2,12 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import Images from '@expo/vector-icons/FontAwesome5';
-import Feather from '@expo/vector-icons/Feather';
-import Setting from '@expo/vector-icons/Ionicons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import Feather from '@expo/vector-icons/Feather';
+import { default as FontAwesome5, default as Images } from '@expo/vector-icons/FontAwesome5';
+import Setting from '@expo/vector-icons/Ionicons';
+
 
 
 export default function TabLayout() {
