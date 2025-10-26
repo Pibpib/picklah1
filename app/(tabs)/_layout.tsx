@@ -10,6 +10,7 @@ import Setting from '@expo/vector-icons/Ionicons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
@@ -35,7 +36,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="manage/index1"
+        name="manage/index"
         options={{
           title: 'Manage',
           tabBarIcon: ({ color }) => <Feather size={28} name="edit" color={color} />,

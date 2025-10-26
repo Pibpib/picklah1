@@ -1,6 +1,7 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
+
 export interface Category {
   id: string;
   categoryName: string;
@@ -94,4 +95,38 @@ export async function fetchActivitiesFiltered(
     console.error("Error fetching filtered activities:", error);
     return [];
   }
+}
+
+import { addDoc, doc, serverTimestamp } from "firebase/firestore";
+
+export async function createActivity(params: {
+  activityTitle: string;          // use the same field name as Firestore
+  description?: string;
+  categoryId: string;             // collection: Category
+  moodIds: string[];              // collection: Mood (array of refs)
+  createdBy?: string;
+}) {
+  const { activityTitle, description, categoryId, moodIds, createdBy = "system" } = params;
+
+  const categoryRef = doc(db, "Category", categoryId);
+  const moodRefs = moodIds.map((id) => doc(db, "Mood", id));
+
+  const ref = await addDoc(collection(db, "Activity"), {
+    activityTitle,
+    description: description ?? "",
+    categoryID: categoryRef,  // your fetcher expects this exact field name
+    moodID: moodRefs,         // array of DocumentReferences
+    createdBy,
+    createdAt: serverTimestamp(),
+  });
+
+  // Return a minimal shape your UI uses
+  return {
+    id: ref.id,
+    activityTitle,
+    description: description ?? "",
+    categoryId,
+    moodIds,
+    createdBy,
+  };
 }
