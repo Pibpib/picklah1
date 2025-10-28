@@ -22,13 +22,17 @@ export default function AboutScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [userPlan, setUserPlan] = useState<"free" | "premium">("free");
 
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [moods, setMoods] = useState<Mood[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
 
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
 
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
@@ -144,6 +148,16 @@ useEffect(() => {
     );
   };
 
+  const getCategoryName = (categoryId: string) => {
+    return categories.find((c) => c.id === categoryId)?.categoryName || "Unknown";
+  };
+
+  const getMoodNames = (moodIds: string[]) => {
+    return moods
+      .filter((m) => moodIds.includes(m.id))
+      .map((m) => m.moodName);
+  };
+
   // Spin wheel
   const spinWheel = () => {
     if (spinning || activities.length === 0) return;
@@ -164,7 +178,11 @@ useEffect(() => {
       setSpinning(false);
       setResult(activities[activityIndex].activityTitle);
       spinAnim.setValue(endDeg % 360);
-      Alert.alert("Activity", `Let's ${activities[activityIndex].activityTitle}!`, [{ text: "OK" }]);
+      
+      const chosen = activities[activityIndex];
+      setSelectedActivity(chosen);
+      setAlertMessage(`${chosen.activityTitle}!`);
+      setCustomAlertVisible(true);
     });
   };
 
@@ -341,6 +359,73 @@ useEffect(() => {
       <Text style={{ marginTop: 10, color: theme.text, fontSize: 12 }}>
         {activities.length} activities available
       </Text>
+
+      {customAlertVisible && selectedActivity && (
+        <View style={[styles.alertOverlay]}>
+          <View
+            style={[
+              styles.alertBox,
+              { backgroundColor: theme.background, borderColor: theme.main },
+            ]}
+          >
+            <Text style={[styles.alertTitle, { color: theme.text }]}>
+              {selectedActivity.activityTitle}
+            </Text>
+
+            {/* Description */}
+            {selectedActivity.description ? (
+              <Text style={[styles.alertMessage, { color: theme.text }]}>
+                {selectedActivity.description}
+              </Text>
+            ) : null}
+
+            {/* Category + Moods */}
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                marginBottom: 12,
+              }}
+            >
+              {/* Category */}
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: theme.main, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.badgeText, { color: theme.text }]}>
+                  {getCategoryName(selectedActivity.categoryId)}
+                </Text>
+              </View>
+
+              {/* Moods */}
+              {getMoodNames(selectedActivity.moodIds).map((mood, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.badge,
+                    { backgroundColor: theme.border, borderColor: theme.border },
+                  ]}
+                >
+                  <Text style={[styles.badgeText, { color: theme.text }]}>{mood}</Text>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.alertButton, { backgroundColor: theme.main }]}
+              onPress={() => setCustomAlertVisible(false)}
+            >
+              <Text style={[styles.alertButtonText, { color: theme.text }]}>
+                OK
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
     </View>
   );
 }
@@ -412,6 +497,60 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "bold",
+  },
+
+  alertOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  alertBox: {
+    width: "80%",
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  alertTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  alertMessage: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  alertButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  alertButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    marginVertical: 3,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 
 });
