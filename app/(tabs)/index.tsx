@@ -488,11 +488,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "90%",
+    width: "100%",
     position: "absolute",
     top: 40,
     zIndex: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 22,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   },
   alertMessage: {
     fontSize: 16,
-    textAlign: "center",
+    textAlign: "justify",
     marginBottom: 16,
   },
   alertButton: {
