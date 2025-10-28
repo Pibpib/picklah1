@@ -5,7 +5,10 @@ import { HapticTab } from '@/components/haptic-tab';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import Feather from '@expo/vector-icons/Feather';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { default as FontAwesome5, default as Images } from '@expo/vector-icons/FontAwesome5';
+import Setting from '@expo/vector-icons/Ionicons';
+
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -38,6 +41,18 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Feather size={28} name="edit" color={color} />,
         }}
       />
+      <Tabs.Screen
+  name="user"              
+  options={{
+    title: 'Settings',
+    tabBarIcon: ({ color, size }) => (<Setting name="settings" color={color} size={size ?? 24} /> ), }}
+/>
+<Tabs.Screen name="memories" 
+options={{
+    title: 'Memories',
+    tabBarIcon: ({ color, size }) => (<Images name="Memories" color={color} size={size ?? 24} /> ), }} />
+
     </Tabs>
+    
   );
 }
