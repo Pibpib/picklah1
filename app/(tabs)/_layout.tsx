@@ -48,6 +48,16 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="game"
+        options={{
+          title: 'Game',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="game-controller-outline" size={24} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
         name="memories"
         options={{
           title: 'Memories',
@@ -56,7 +66,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="user"
         options={{

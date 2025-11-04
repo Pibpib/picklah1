@@ -1,0 +1,97 @@
+import React, { useState } from "react";
+import { View, FlatList, Text, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Colors } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import GameOverlay from "./gameOverlay";
+import { miniGames } from "../../src/questions";
+
+export default function MiniGamesPage() {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
+  type GameKey = keyof typeof miniGames;
+  const [activeGame, setActiveGame] = useState<GameKey | null>(null);
+
+  type GameItem = { id: GameKey; title: string; icon: string; description: string };
+  const games: GameItem[] = [
+    { id: "truthOrDare", title: "Truth or Dare", icon: "flame-outline", description: "Pick between answering a truth or doing a dare!" },
+    { id: "thisOrThat", title: "This or That", icon: "swap-horizontal-outline", description: "Choose between two options!" },
+    { id: "whosMoreLikely", title: "Who's More Likely", icon: "people-outline", description: "Find out who among your friends fits best!" },
+  ];
+
+  const renderItem = ({ item, index }: { item: GameItem; index: number }) => (
+    <View style={[styles.card, { borderColor: theme.border }, index === 0 && { marginTop: 80 }]}>
+      <View style={styles.cardHeader}>
+        <Ionicons name={item.icon as any} size={40} color={theme.main} />
+        <Text style={[styles.cardTitle, { color: theme.text }]}>{item.title}</Text>
+      </View>
+      <Text style={[styles.cardDesc, { color: theme.text }]}>{item.description}</Text>
+      <TouchableOpacity
+        style={[styles.playButton, { backgroundColor: theme.main }]}
+        onPress={() => setActiveGame(item.id)}
+      >
+        <Text style={[styles.playButtonText, { color: theme.text }]}>Play</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <ThemedView style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={styles.header}>
+        <ThemedText style={[styles.title, { color: theme.text }]}>Mini Games</ThemedText>
+      </View>
+
+      <FlatList
+        data={games}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+      />
+
+      {/* Overlay for each game */}
+      {activeGame && (
+        <GameOverlay
+          visible={true}
+          title={miniGames[activeGame].title}
+          questions={miniGames[activeGame].questions}
+          onClose={() => setActiveGame(null)}
+        />
+      )}
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { 
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    position: "absolute",
+    top: 40,
+    zIndex: 10,
+    paddingHorizontal: 16,
+  },
+  title: { fontSize: 22, fontWeight: "bold" },
+  card: {
+    borderRadius: 10,
+    padding: 16,
+    marginHorizontal: 6,
+    marginVertical: 8,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardHeader: { alignItems: "center", marginBottom: 6, gap: 10 },
+  cardTitle: { fontSize: 20, fontWeight: "700" },
+  cardDesc: { fontSize: 14, textAlign: "center", marginBottom: 8 },
+  playButton: {
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: "center",
+    paddingHorizontal: 20,
+  },
+  playButtonText: { fontSize: 16, fontWeight: "700" },
+});
