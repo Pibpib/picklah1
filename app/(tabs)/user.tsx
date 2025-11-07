@@ -4,13 +4,14 @@ import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Alert }
 import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import {
-  doc, getDoc, collection, query, where, getCountFromServer, Firestore,
+  doc, getDoc, collection, query, where, getCountFromServer, Firestore,Timestamp 
 } from 'firebase/firestore';
 
 // RELATIVE imports (we're not using "@/")
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
 import { auth, db } from '../../services/firebaseConfig'; // <- make sure these exist
+
 
 type Counts = { activity: number; category: number; mood: number };
 type ProfileDoc = {
@@ -22,6 +23,12 @@ type ProfileDoc = {
 };
 
 const initialCounts: Counts = { activity: 0, category: 0, mood: 0 };
+
+const formatTimestamp = (ts?: string | Timestamp | null) => {
+  if (!ts) return '—';
+  if (ts instanceof Timestamp) return ts.toDate().toLocaleDateString();
+  return ts;
+};
 
 export default function UserScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -75,7 +82,7 @@ export default function UserScreen() {
 
   const name = profile.displayName ?? fbUser?.displayName ?? 'Your Name';
   const email = fbUser?.email ?? '—';
-  const dob = profile.dob ?? '—';
+  const dob = formatTimestamp(profile.dob);
 
   const onLogout = async () => {
     try {
