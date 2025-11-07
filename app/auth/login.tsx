@@ -1,6 +1,14 @@
 import React, { useState } from "react";
-import {View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, useColorScheme,} from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  View,
+  Text,
+  TextInput,
+  Alert,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+} from "react-native";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../services/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
@@ -24,7 +32,34 @@ export default function LoginScreen() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/(tabs)"); 
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      let message = "An error occurred. Please try again.";
+      // Handle Firebase Auth errors
+      switch (error.code) {
+        case "auth/invalid-credential":
+          message = "Invalid login credentials. Please try again.";
+          break;
+        default:
+          message = error.message;
+      }
+      Alert.alert("⚠️ Error", message);
+    }
+  };
+
+  // ✅ PASSWORD RESET
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Enter Email", "Please enter your email to reset password.");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert(
+        "✅ Email Sent",
+        `A password reset link has been sent to:\n${email}`
+      );
     } catch (error: any) {
       Alert.alert("⚠️ Error", error.message);
     }
@@ -70,6 +105,11 @@ export default function LoginScreen() {
           />
         </TouchableOpacity>
       </View>
+
+      {/* ✅ FORGOT PASSWORD */}
+      <TouchableOpacity onPress={handleForgotPassword} style={{ alignSelf: "flex-end" }}>
+        <Text style={{ color: theme.tint, marginBottom: 10 }}>Forgot Password?</Text>
+      </TouchableOpacity>
 
       {/* Login Button */}
       <TouchableOpacity

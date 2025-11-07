@@ -14,7 +14,7 @@ import {
   useColorScheme,
   View
 } from "react-native";
-import { Colors } from "../../../constants/theme";
+import { Colors } from "../../constants/theme";
 import {
   Activity,
   Category,
@@ -23,7 +23,7 @@ import {
   fetchCategories,
   fetchMoods,
   Mood,
-} from "../../../services/activityService";
+} from "../../services/activityService";
 
 export default function ActivityTab() {
   const colorScheme = useColorScheme();
@@ -286,7 +286,7 @@ export default function ActivityTab() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-        
+         
             {selectedTab === 'activity' && (
               <>
                 <TextInput

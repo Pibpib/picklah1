@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { View, FlatList, Text, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import GameOverlay from "./gameOverlay";
+import React, { useState } from "react";
+import { FlatList, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { miniGames } from "../../src/questions";
+import GameOverlay from "../gameOverlay";
 
 export default function MiniGamesPage() {
   const colorScheme = useColorScheme();
@@ -16,7 +16,7 @@ export default function MiniGamesPage() {
   type GameItem = { id: GameKey; title: string; icon: string; description: string };
   const games: GameItem[] = [
     { id: "truthOrDare", title: "Truth or Dare", icon: "flame-outline", description: "Pick between answering a truth or doing a dare!" },
-    { id: "thisOrThat", title: "This or That", icon: "swap-horizontal-outline", description: "Choose between two options!" },
+    { id: "thisOrThat", title: "This or That", icon: "swap-horizontal-outline", description: "Ask your friends to choose between two options!" },
     { id: "whosMoreLikely", title: "Who's More Likely", icon: "people-outline", description: "Find out who among your friends fits best!" },
   ];
 

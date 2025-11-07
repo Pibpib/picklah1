@@ -38,7 +38,7 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="manage/index"
+        name="manage"
         options={{
           title: 'Manage',
           tabBarIcon: ({ color }) => (

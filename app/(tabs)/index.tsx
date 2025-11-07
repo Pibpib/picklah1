@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView, useColorScheme, Alert } from "react-native";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView, useColorScheme, Alert, Image } from "react-native";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { useRouter } from "expo-router";
 
@@ -10,6 +10,10 @@ import {fetchCategories, fetchMoods, fetchActivitiesFiltered, Activity, Category
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "../../services/firebaseConfig";
 import { getUserProfile,getUserSubscription } from "../../services/userService";
+
+import spinWheelBoard from "../../assets/images/spinWheelBoard.png";
+import spinBtn from "../../assets/images/spinBtn.png";
+import spinBtnPressed from "../../assets/images/spin-pressed.png";
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -194,22 +198,6 @@ useEffect(() => {
   const radius = 140;
   const anglePerSlice = (2 * Math.PI) / (activities.length || 1);
 
-  const createPath = (i: number) => {
-    const startAngle = i * anglePerSlice - Math.PI / 2;
-    const endAngle = startAngle + anglePerSlice;
-    const x1 = radius + radius * Math.cos(startAngle);
-    const y1 = radius + radius * Math.sin(startAngle);
-    const x2 = radius + radius * Math.cos(endAngle);
-    const y2 = radius + radius * Math.sin(endAngle);
-
-    return `
-      M${radius},${radius}
-      L${x1},${y1}
-      A${radius},${radius} 0 0,1 ${x2},${y2}
-      Z
-    `;
-  };
-
   // Placeholder if no activities
   const displayActivities = activities.length > 0
     ? activities
@@ -222,6 +210,33 @@ useEffect(() => {
         <TouchableOpacity onPress={() => setShowFilter(!showFilter)}>
           <Ionicons name="filter" size={24} color={theme.tint} />
         </TouchableOpacity>
+      </View>
+
+      {/* Headline */}
+      <View style={{ alignItems: "center", marginTop: 100, marginBottom: 80 }}>
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: "700",
+            textAlign: "center",
+          }}
+        >
+            ✨{"\n"}
+            <Text style={{ color: theme.text }}>No More{"\n"}</Text>
+            <Text style={{ color: theme.main }}>Decision Fatigue</Text>
+        </Text>
+
+        <Text
+          style={{
+            color: theme.text,
+            fontSize: 14,
+            opacity: 0.8,
+            marginTop: 8,
+            textAlign: "center",
+          }}
+        >
+          Let Your Destiny Choose Your Activity
+        </Text>
       </View>
 
       {/* Filter menu */}
@@ -299,64 +314,44 @@ useEffect(() => {
         </View>
       )}
 
-      {/* Pointer */}
-      <View style={{ alignItems: "center" }}>
-        <Ionicons name="arrow-down-outline" size={30} color={theme.text} />
-      </View>
+      {/* Wheel Image */}
+        <View style={{ marginBottom: 16, width: radius * 2, height: radius * 2 }}>
+        <Animated.Image
+            source={spinWheelBoard}
+            style={{
+            width: radius * 2,
+            height: radius * 2,
+            transform: [{ rotate: spin }],
+            }}
+            resizeMode="contain"
+        />
 
-      {/* Wheel */}
-      <Animated.View style={{ transform: [{ rotate: spin }], marginBottom: 30 }}>
-        <Svg width={radius * 2} height={radius * 2}>
-          <G>
-            {displayActivities.map((activity, i) => {
-              const midAngle = (i + 0.5) * anglePerSlice - Math.PI / 2;
-              const textRadius = radius * 0.65;
-              const x = radius + textRadius * Math.cos(midAngle);
-              const y = radius + textRadius * Math.sin(midAngle);
+        {/* Spin Button overlay */}
+        <TouchableOpacity
+            onPress={spinWheel}
+            disabled={spinning || activities.length === 0}
+            activeOpacity={1}
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: 80,
+              height: 80,
+              marginLeft: -40, // center horizontally
+              marginTop: -50,  // center vertically
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+        >
+            <Image
+            source={spinning ? spinBtnPressed : spinBtn}
+            style={{ width: 80, height: 80 }}
+            resizeMode="contain"
+            />
+        </TouchableOpacity>
+        </View>
 
-              return (
-                <React.Fragment key={activity.id}>
-                  <Path
-                    d={createPath(i)}
-                    fill={i % 2 === 0 ? theme.tint : theme.mainlight}
-                    stroke={theme.text}
-                    strokeWidth={1}
-                  />
-                  <SvgText
-                    x={x}
-                    y={y}
-                    fill={theme.text}
-                    fontWeight="bold"
-                    fontSize={16}
-                    textAnchor="middle"
-                    alignmentBaseline="middle"
-                  >
-                    {activity.activityTitle}
-                  </SvgText>
-                </React.Fragment>
-              );
-            })}
-          </G>
-        </Svg>
-      </Animated.View>
-
-      {/* Spin Button */}
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.main }]}
-        onPress={spinWheel}
-        disabled={spinning || activities.length === 0}
-      >
-        <Entypo name="ccw" size={18} color={theme.text} />
-        <Text style={styles.buttonText}>
-          {spinning
-            ? "Spinning..."
-            : activities.length === 0
-            ? "No Activities"
-            : "SPIN"}
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={{ marginTop: 10, color: theme.text, fontSize: 12 }}>
+      <Text style={{ color: theme.text, fontSize: 14 }}>
         {activities.length} activities available
       </Text>
 
@@ -436,7 +431,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
-    paddingTop: "60%",
   },
   filterMenu: {
     borderRadius: 12,
@@ -522,7 +516,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   alertTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     marginBottom: 8,
   },
