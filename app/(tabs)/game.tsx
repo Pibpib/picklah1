@@ -37,9 +37,9 @@ export default function MiniGamesPage() {
   );
 
   return (
-    <ThemedView style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <ThemedText style={[styles.title, { color: theme.text }]}>Mini Games</ThemedText>
+        <Text style={[styles.title, { color: theme.text }]}>Mini Games</Text>
       </View>
 
       <FlatList
@@ -58,11 +58,16 @@ export default function MiniGamesPage() {
           onClose={() => setActiveGame(null)}
         />
       )}
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
   header: { 
     flexDirection: "row",
     justifyContent: "space-between",
@@ -71,7 +76,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     zIndex: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   title: { fontSize: 22, fontWeight: "bold" },
   card: {

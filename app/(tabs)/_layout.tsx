@@ -85,14 +85,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused, size }) =>
             focused ? (
               <ActiveBubble>
-                <FontAwesome5 name="images" size={size ?? 24} color={color} />
+                <FontAwesome5 name="images" size={24} color={color} />
               </ActiveBubble>
             ) : (
-              <FontAwesome5 name="images" size={size ?? 24} color={color} />
+              <FontAwesome5 name="images" size={24} color={color} />
             ),
         }}
       />
-      
+
       {/* GAME */}
       <Tabs.Screen
         name="game"
@@ -117,10 +117,10 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused, size }) =>
             focused ? (
               <ActiveBubble>
-                <Ionicons name="settings" size={size ?? 24} color={color} />
+                <Ionicons name="settings" size={24} color={color} />
               </ActiveBubble>
             ) : (
-              <Ionicons name="settings" size={size ?? 24} color={color} />
+              <Ionicons name="settings" size={24} color={color} />
             ),
         }}
       />
