@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, deleteDoc, getDocs, updateDoc } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 
@@ -97,7 +97,7 @@ export async function fetchActivitiesFiltered(
   }
 }
 
-import { addDoc, doc, serverTimestamp } from "firebase/firestore";
+import { addDoc, doc } from "firebase/firestore";
 
 export async function createActivity(params: {
   activityTitle: string;          // use the same field name as Firestore
@@ -106,7 +106,7 @@ export async function createActivity(params: {
   moodIds: string[];              // collection: Mood (array of refs)
   createdBy?: string;
 }) {
-  const { activityTitle, description, categoryId, moodIds, createdBy = "system" } = params;
+  const { activityTitle, description, categoryId, moodIds, createdBy} = params;
 
   const categoryRef = doc(db, "Category", categoryId);
   const moodRefs = moodIds.map((id) => doc(db, "Mood", id));
@@ -114,13 +114,13 @@ export async function createActivity(params: {
   const ref = await addDoc(collection(db, "Activity"), {
     activityTitle,
     description: description ?? "",
-    categoryID: categoryRef,  // your fetcher expects this exact field name
+    categoryID: categoryRef,  
     moodID: moodRefs,         // array of DocumentReferences
     createdBy,
-    createdAt: serverTimestamp(),
+   
   });
 
-  // Return a minimal shape your UI uses
+  
   return {
     id: ref.id,
     activityTitle,
@@ -129,4 +129,24 @@ export async function createActivity(params: {
     moodIds,
     createdBy,
   };
+}
+
+export async function deleteActivity(id: string) {
+  try {
+    await deleteDoc(doc(db, "Activity", id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting activity:", error);
+    throw error;
+  }
+}
+
+export async function updateActivity(id: string, data: Partial<Activity>) {
+  try {
+    await updateDoc(doc(db, "Activity", id), data);
+    return true;
+  } catch (error) {
+    console.error("Error updating activity:", error);
+    throw error;
+  }
 }

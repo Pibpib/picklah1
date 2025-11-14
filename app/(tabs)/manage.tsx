@@ -1,12 +1,15 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { auth } from "@/services/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
+import { onAuthStateChanged } from "firebase/auth";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
   FlatList,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,10 +22,12 @@ import {
   Activity,
   Category,
   createActivity,
+  deleteActivity,
   fetchActivitiesFiltered,
   fetchCategories,
   fetchMoods,
   Mood,
+  updateActivity
 } from "../../services/activityService";
 
 export default function ActivityTab() {
@@ -37,6 +42,7 @@ export default function ActivityTab() {
   const [newDesc, setNewDesc] = useState("");
   const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
   const [newMoodIds, setNewMoodIds] = useState<string[]>([]);
+ 
 
   const toggleNewMood = (id: string) => {
     setNewMoodIds(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -48,13 +54,89 @@ export default function ActivityTab() {
     setNewCategoryId(null);
     setNewMoodIds([]);
   };
+  const handleDeleteActivity = async (id: string) => {
+    try {
+      await deleteActivity(id);
+      setActivities(prev => prev.filter(a => a.id !== id));
+    } catch (e) {
+      console.error("Failed to delete activity", e);
+    }
+  };
+  const handleEditActivity = (item: any) => {
+    setEditingId(item.id);
+  
+    setNewTitle(item.activityTitle);
+    setNewDesc(item.description || "");
+    setNewCategoryId(item.categoryId);
+    setNewMoodIds(item.moodIds || []);
+  
+    setModalVisible(true);
+  };
+  const handleSaveActivity = async () => {
+    if (!newTitle || !newCategoryId || newMoodIds.length === 0) return;
+  
+    try {
+      if (editingId) {
+        // EDIT MODE
+        await updateActivity(editingId, {
+          activityTitle: newTitle,
+          description: newDesc,
+          categoryId: newCategoryId,
+          moodIds: newMoodIds,
+        });
+  
+        const catName =
+          categories.find((c) => c.id === newCategoryId)?.categoryName || "Uncategorized";
+        const moodNames = newMoodIds
+          .map((mid) => moods.find((m) => m.id === mid)?.moodName || "")
+          .filter(Boolean) as string[];
+  
+        setActivities(prev =>
+          prev.map(a =>
+            a.id === editingId
+              ? {
+                  ...a,
+                  activityTitle: newTitle,
+                  description: newDesc,
+                  categoryId: newCategoryId,
+                  moodIds: newMoodIds,
+                  categoryName: catName,
+                  moodNames,
+                }
+              : a
+          )
+        );
+      } else {
+        // CREATE MODE
+        await handleCreateActivity();
+      }
+    } catch (e) {
+      console.error("Failed to save activity", e);
+    } finally {
+      setModalVisible(false);
+      resetCreateForm();
+      setEditingId(null);
+    }
+  };
+  
 
   // Data state
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [moods, setMoods] = useState<Mood[]>([]);
-
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Get current user ID
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      console.log("🔥 Logged-in UID:", user?.uid ?? null);
+      setCurrentUserId(user?.uid ?? null);
+    });
+  
+    return unsub;
+  }, []);
   // Load data depending on tab
   useEffect(() => {
     const load = async () => {
@@ -78,6 +160,8 @@ export default function ActivityTab() {
             };
           });
           setActivities(mapped);
+          setCategories(categoryList);   
+          setMoods(moodList);   
         } else if (selectedTab === "category") {
           const cats = await fetchCategories();
           setCategories(cats);
@@ -135,9 +219,7 @@ export default function ActivityTab() {
                   {item.description}
                 </Text>
               ) : null}
-
-              {/* Moods */}
-              {!!item.moodNames?.length && (
+  {!!item.moodNames?.length && (
                 <View style={styles.moodRow}>
                   {item.moodNames.map((m: string, i: number) => (
                     <View
@@ -149,8 +231,22 @@ export default function ActivityTab() {
                   ))}
                 </View>
               )}
+
+              {/* Actions */}
+              <View style={styles.footerActionRow}>
+                <TouchableOpacity
+                  onPress={() => handleEditActivity(item)}
+                  style={{ marginRight: 16 }}
+                >
+                  <Ionicons name="create-outline" size={18} color={theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteActivity(item.id)}>
+                  <Ionicons name="trash-outline" size={18} color="#E53935" />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
+          
         />
       );
     }
@@ -192,6 +288,11 @@ export default function ActivityTab() {
     );
   };
 
+  if (!currentUserId) {
+    console.warn("❗ UID not ready yet, blocking create");
+    return;
+  }
+
   const handleCreateActivity = async () => {
     if (!newTitle || !newCategoryId || newMoodIds.length === 0) return;
   
@@ -201,6 +302,7 @@ export default function ActivityTab() {
         description: newDesc,
         categoryId: newCategoryId,
         moodIds: newMoodIds,
+        createdBy: currentUserId!,
       });
   
       const catName =
@@ -210,7 +312,7 @@ export default function ActivityTab() {
         .filter(Boolean) as string[];
   
       const mapped = {
-        id: created?.id ?? String(Date.now()),
+        id: created?.id,
         activityTitle: created?.activityTitle ?? newTitle,
         description: created?.description ?? newDesc,
         categoryId: newCategoryId,
@@ -220,11 +322,9 @@ export default function ActivityTab() {
       } as any;
   
       setActivities((prev) => [mapped, ...prev]);
+      console.log("📌 Using UID on create:", currentUserId);
     } catch (e) {
       console.error("Failed to create activity", e);
-    } finally {
-      setModalVisible(false);
-      resetCreateForm();
     }
   };
 
@@ -286,6 +386,11 @@ export default function ActivityTab() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+          <ScrollView 
+      style={{ width: "100%" }} 
+      contentContainerStyle={{ paddingBottom: 20 }}
+      showsVerticalScrollIndicator={false}
+    >
          
             {selectedTab === 'activity' && (
               <>
@@ -333,24 +438,26 @@ export default function ActivityTab() {
 
                 {/* Footer buttons */}
                 <View style={styles.footerRow}>
-                  <TouchableOpacity
-                    onPress={() => { setModalVisible(false); resetCreateForm(); }}
-                    style={styles.btnCancel}
-                  >
-                    <Text style={styles.btnCancelText}>Cancel</Text>
-                  </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setModalVisible(false); resetCreateForm(); setEditingId(null); }}
+              style={styles.btnCancel}
+            >
+              <Text style={styles.btnCancelText}>Cancel</Text>
+            </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => { handleCreateActivity; setModalVisible(false); resetCreateForm(); }}
-                    disabled={!newTitle || !newCategoryId || newMoodIds.length === 0}
-                    style={[
-                      styles.btnCreate,
-                      (!newTitle || !newCategoryId || newMoodIds.length === 0) && { opacity: 0.6 },
-                    ]}
-                  >
-                    <Text style={styles.btnCreateText}>Create</Text>
-                  </TouchableOpacity>
-                </View>
+            <TouchableOpacity
+              onPress={handleSaveActivity}
+              disabled={!newTitle || !newCategoryId || newMoodIds.length === 0}
+              style={[
+                styles.btnCreate,
+                (!newTitle || !newCategoryId || newMoodIds.length === 0) && { opacity: 0.6 },
+              ]}
+            >
+              <Text style={styles.btnCreateText}>
+                {editingId ? "Save Changes" : "Create"}
+              </Text>
+            </TouchableOpacity>
+          </View>
               </>
             )}
 
@@ -387,6 +494,7 @@ export default function ActivityTab() {
                 </TouchableOpacity>
               </>
             )}
+            </ScrollView>
            </View>
         </View>
       </Modal>
@@ -476,6 +584,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#fff",
+    maxHeight: "80%",
     width: "80%",
     padding: 20,
     borderRadius: 10,
@@ -503,7 +612,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   chipSelected: {
-    backgroundColor: '#F2F4F7',
+    backgroundColor: '#FCBF49',
+    
   },
   chipText: {
     fontWeight: '700',
@@ -535,6 +645,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 18,
     color: '#1F2A3B',
+    textAlign: 'center',
   },
   btnCreate: {
     flex: 1,
@@ -547,5 +658,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 18,
     color: '#1A1A1A',
+    textAlign: 'center',
+  },
+  footerActionRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
 });
+
+
+
