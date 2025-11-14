@@ -77,22 +77,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* GAME */}
-      <Tabs.Screen
-        name="game"
-        options={{
-          title: 'Game',
-          tabBarIcon: ({ color, focused }) =>
-            focused ? (
-              <ActiveBubble>
-                <Ionicons name="game-controller-outline" size={24} color={color} />
-              </ActiveBubble>
-            ) : (
-              <Ionicons name="game-controller-outline" size={24} color={color} />
-            ),
-        }}
-      />
-
       {/* MEMORIES */}
       <Tabs.Screen
         name="memories"
@@ -105,6 +89,22 @@ export default function TabLayout() {
               </ActiveBubble>
             ) : (
               <FontAwesome5 name="images" size={size ?? 24} color={color} />
+            ),
+        }}
+      />
+      
+      {/* GAME */}
+      <Tabs.Screen
+        name="game"
+        options={{
+          title: 'Game',
+          tabBarIcon: ({ color, focused }) =>
+            focused ? (
+              <ActiveBubble>
+                <Ionicons name="game-controller-outline" size={24} color={color} />
+              </ActiveBubble>
+            ) : (
+              <Ionicons name="game-controller-outline" size={24} color={color} />
             ),
         }}
       />
