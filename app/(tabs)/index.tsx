@@ -72,72 +72,71 @@ export default function AboutScreen() {
   }, []);
 
 
-// Fetch categories & moods depending on user plan
-useEffect(() => {
-  const loadFilters = async () => {
-    const catData = await fetchCategories();
-    const moodData = await fetchMoods();
+  // Fetch categories & moods depending on user plan
+  useEffect(() => {
+    const loadFilters = async () => {
+      const catData = await fetchCategories();
+      const moodData = await fetchMoods();
 
-    let filteredCats = catData;
-    let filteredMoods = moodData;
+      let filteredCats = catData;
+      let filteredMoods = moodData;
 
-    if (userPlan === "free") {
-      filteredCats = catData.filter((c) => c.accessLevel === "free");
-      filteredMoods = moodData.filter((m) => m.accessLevel === "free");
-    }
+      if (userPlan === "free") {
+        filteredCats = catData.filter((c) => c.accessLevel === "free");
+        filteredMoods = moodData.filter((m) => m.accessLevel === "free");
+      }
 
-    setCategories(filteredCats);
-    setMoods(filteredMoods);
+      setCategories(filteredCats);
+      setMoods(filteredMoods);
 
-    setSelectedCategories(filteredCats.map((c) => c.id));
-    setSelectedMoods(filteredMoods.map((m) => m.id));
-  };
+      setSelectedCategories(filteredCats.map((c) => c.id));
+      setSelectedMoods(filteredMoods.map((m) => m.id));
+    };
 
-  if (userPlan) loadFilters();
-}, [userPlan]);
+    if (userPlan) loadFilters();
+  }, [userPlan]);
 
+  // Fetch filtered activities
+  useEffect(() => {
+    const loadActivities = async () => {
+      const allActivities = await fetchActivitiesFiltered(selectedCategories, selectedMoods);
 
-// Fetch filtered activities
-useEffect(() => {
-  const loadActivities = async () => {
-    const allActivities = await fetchActivitiesFiltered(selectedCategories, selectedMoods);
+      let filtered = allActivities;
 
-    let filtered = allActivities;
+      if (userPlan === "free") {
+        filtered = allActivities.filter((a) => {
+    const category = categories.find((c) => c.id === a.categoryId);
+    const moodAccess = a.moodIds.map(
+      (mid) => moods.find((m) => m.id === mid)?.accessLevel
+    );
 
-    if (userPlan === "free") {
-      filtered = allActivities.filter((a) => {
-  const category = categories.find((c) => c.id === a.categoryId);
-  const moodAccess = a.moodIds.map(
-    (mid) => moods.find((m) => m.id === mid)?.accessLevel
-  );
+    const allMoodsFree = moodAccess.every((lvl) => lvl === "free");
+    const isCategoryFree = category?.accessLevel === "free";
+    const isSystemActivity = a.createdBy === "system";
 
-  const allMoodsFree = moodAccess.every((lvl) => lvl === "free");
-  const isCategoryFree = category?.accessLevel === "free";
-  const isSystemActivity = a.createdBy === "system";
+    console.log({
+      activity: a.activityTitle,
+      createdBy: a.createdBy,
+      categoryAccess: category?.accessLevel,
+      moodAccess,
+      pass: isSystemActivity && isCategoryFree && allMoodsFree
+    });
 
-  console.log({
-    activity: a.activityTitle,
-    createdBy: a.createdBy,
-    categoryAccess: category?.accessLevel,
-    moodAccess,
-    pass: isSystemActivity && isCategoryFree && allMoodsFree
+    return isSystemActivity && isCategoryFree && allMoodsFree;
   });
 
-  return isSystemActivity && isCategoryFree && allMoodsFree;
-});
+      } else {
+        filtered = allActivities.filter(
+          (a) => a.createdBy === "system" || a.createdBy === user?.uid
+        );
+      }
 
-    } else {
-      filtered = allActivities.filter(
-        (a) => a.createdBy === "system" || a.createdBy === user?.uid
-      );
-    }
+      console.log("Filtered activities count:", filtered.length);
+      setActivities(filtered);
+    };
 
-    console.log("Filtered activities count:", filtered.length);
-    setActivities(filtered);
-  };
-
-  if (categories.length > 0 && moods.length > 0) loadActivities();
-}, [selectedCategories, selectedMoods, userPlan]);
+    if (categories.length > 0 && moods.length > 0) loadActivities();
+  }, [selectedCategories, selectedMoods, userPlan]);
 
   // Toggle helpers
   const toggleCategory = (id: string) => {
@@ -197,11 +196,37 @@ useEffect(() => {
 
   const radius = 140;
   const anglePerSlice = (2 * Math.PI) / (activities.length || 1);
+  const createPath = (i: number) => {
+    const startAngle = i * anglePerSlice - Math.PI / 2;
+    const endAngle = startAngle + anglePerSlice;
+    const x1 = radius + radius * Math.cos(startAngle);
+    const y1 = radius + radius * Math.sin(startAngle);
+    const x2 = radius + radius * Math.cos(endAngle);
+    const y2 = radius + radius * Math.sin(endAngle);
 
+    return `
+      M${radius},${radius}
+      L${x1},${y1}
+      A${radius},${radius} 0 0,1 ${x2},${y2}
+      Z
+    `;
+  };
+  
   // Placeholder if no activities
   const displayActivities = activities.length > 0
     ? activities
-    : [{ id: "none", activityTitle: "No activity", categoryId: "", moodId: "" }];
+    : [
+        {
+          id: "none",
+          activityTitle: "No activity",
+          categoryId: "",
+          // ensure the placeholder matches the Activity shape expected elsewhere
+          moodIds: [],
+          emoji: "",
+          createdBy: "system",
+          description: "",
+        },
+      ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -315,16 +340,70 @@ useEffect(() => {
       )}
 
       {/* Wheel Image */}
-        <View style={{ marginBottom: 16, width: radius * 2, height: radius * 2 }}>
-        <Animated.Image
-            source={spinWheelBoard}
-            style={{
-            width: radius * 2,
-            height: radius * 2,
-            transform: [{ rotate: spin }],
-            }}
-            resizeMode="contain"
-        />
+        <View style={{
+            marginBottom: 30,
+            alignItems: "center",
+            justifyContent: "center",
+            width: radius * 2 + 20, // add some padding for outer circle
+            height: radius * 2 + 20,
+            borderRadius: (radius * 2 + 20) / 2,
+            backgroundColor: theme.main,
+            borderWidth: 2,
+            borderColor: "#BC810F",
+        }}
+        >
+        <Svg
+            width={radius * 2 + 10}
+            height={radius * 2 + 10}
+            style={{ position: "absolute" }}
+        >
+            <Path
+            d={`
+                M${radius + 5},${radius + 5}
+                m-${radius},0
+                a${radius},${radius} 0 1,0 ${radius * 2},0
+                a${radius},${radius} 0 1,0 -${radius * 2},0
+            `}
+            fill="none"
+            stroke="#BC810F"
+            strokeWidth={4}
+            />
+        </Svg>
+
+        {/* Animated spinning wheel */}
+        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+            <Svg width={radius * 2} height={radius * 2}>
+            <G>
+                {displayActivities.map((activity, i) => {
+                const midAngle = (i + 0.5) * anglePerSlice - Math.PI / 2;
+                const textRadius = radius * 0.8;
+                const x = radius + textRadius * Math.cos(midAngle);
+                const y = radius + textRadius * Math.sin(midAngle);
+                const rotation = (midAngle * 180) / Math.PI;
+                return (
+                    <React.Fragment key={activity.id}>
+                    <Path
+                        d={createPath(i)}
+                        fill={i % 2 === 0 ? theme.background : theme.mainlight}
+                    />
+                    <SvgText
+                        x={x}
+                        y={y}
+                        fill={theme.text}
+                        fontWeight="bold"
+                        fontSize={16}
+                        textAnchor="middle"
+                        alignmentBaseline="middle"
+                        transform={`rotate(${rotation}, ${x}, ${y})`} // rotate around its own center
+                    >
+                        {activity.emoji ? activity.emoji + " " : ""}
+                    </SvgText>
+                    </React.Fragment>
+                );
+                })}
+            </G>
+            </Svg>
+        </Animated.View>
 
         {/* Spin Button overlay */}
         <TouchableOpacity
@@ -360,9 +439,29 @@ useEffect(() => {
           <View
             style={[
               styles.alertBox,
-              { backgroundColor: theme.background, borderColor: theme.main },
+              { backgroundColor: theme.background, },
             ]}
           >
+            {/* Close button at top-right */}
+            <TouchableOpacity
+              onPress={() => setCustomAlertVisible(false)}
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                zIndex: 10,
+                backgroundColor: theme.border,
+                paddingHorizontal: 8,
+                borderRadius: 12,
+              }}
+            >
+              <Text style={{ fontSize: 20, fontWeight: "bold", color: theme.text }}>
+                ×
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.alertEmoji, { color: theme.text }]}>
+              {selectedActivity.emoji ? selectedActivity.emoji + " " : ""}
+            </Text>
             <Text style={[styles.alertTitle, { color: theme.text }]}>
               {selectedActivity.activityTitle}
             </Text>
@@ -408,15 +507,6 @@ useEffect(() => {
                 </View>
               ))}
             </View>
-
-            <TouchableOpacity
-              style={[styles.alertButton, { backgroundColor: theme.main }]}
-              onPress={() => setCustomAlertVisible(false)}
-            >
-              <Text style={[styles.alertButtonText, { color: theme.text }]}>
-                OK
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -508,12 +598,16 @@ const styles = StyleSheet.create({
     width: "80%",
     padding: 24,
     borderRadius: 16,
-    borderWidth: 2,
     alignItems: "center",
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 8,
+  },
+  alertEmoji: {
+    fontSize: 64,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
   alertTitle: {
     fontSize: 24,
@@ -524,15 +618,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "justify",
     marginBottom: 16,
-  },
-  alertButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  alertButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
   },
   badge: {
     paddingHorizontal: 10,

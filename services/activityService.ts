@@ -25,6 +25,7 @@ export interface Activity {
   createdBy: string;
   moodIds: string[];
   categoryId: string;
+  emoji?: string;
 }
 
 // Fetch categories from Firestore
@@ -76,6 +77,7 @@ export async function fetchActivitiesFiltered(
         createdBy: data.createdBy,
         moodIds,
         categoryId: data.categoryID?.id || "",
+        emoji: data.emoji,
       };
     });
 
