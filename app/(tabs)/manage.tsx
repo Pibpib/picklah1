@@ -454,7 +454,7 @@ export default function ActivityTab() {
               ]}
             >
               <Text style={styles.btnCreateText}>
-                {editingId ? "Save Changes" : "Create"}
+                {editingId ? "Update" : "Create"}
               </Text>
             </TouchableOpacity>
           </View>

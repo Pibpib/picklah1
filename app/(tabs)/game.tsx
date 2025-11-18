@@ -1,13 +1,13 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { miniGames } from "../../src/questions";
 import GameOverlay from "../gameOverlay";
+import { useRouter } from "expo-router";
 
 export default function MiniGamesPage() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   type GameKey = keyof typeof miniGames;
@@ -29,7 +29,14 @@ export default function MiniGamesPage() {
       <Text style={[styles.cardDesc, { color: theme.text }]}>{item.description}</Text>
       <TouchableOpacity
         style={[styles.playButton, { backgroundColor: theme.main }]}
-        onPress={() => setActiveGame(item.id)}
+        onPress={() => {
+          if (item.id === "truthOrDare") {
+            router.push("/Players");
+          } else {
+            setActiveGame(item.id);
+          }
+        }}
+
       >
         <Text style={[styles.playButtonText, { color: theme.text }]}>Play</Text>
       </TouchableOpacity>
@@ -50,7 +57,7 @@ export default function MiniGamesPage() {
       />
 
       {/* Overlay for each game */}
-      {activeGame && (
+      {activeGame && activeGame !== "truthOrDare" && (
         <GameOverlay
           visible={true}
           title={miniGames[activeGame].title}

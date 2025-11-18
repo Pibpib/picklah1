@@ -24,21 +24,16 @@ export const Colors = {
     
   },
   dark: {
-    text: '#EAE2B7',
-    background: '#003049',
-    tint: tintColorDark,
-    icon: '#EAE2B7',
-    tabIconDefault: '#EAE2B7',
-    mainlight: tintColorDark,
-    main: '#FCBF49',
-    accent:'#f8d99d',
-    
-    border:'#5A5A5A',
-    borderbold:'#CFCFCF',
-    bordertint:'#fbc684',
-
-    filterDefault: '#fcbf49',
-    filterSelected: '#F77F00',
+text: '#F8F8F8',           
+    background: '#20232A',
+    main: '#FCBF49',           
+    tint: '#F77F00',   
+    mainlight: '#FFDFA4', 
+    accent: '#FFDFA4',
+    border: '#3A3A3A', 
+    borderbold: '#5C5C5C',  
+    bordertint: '#FCBF49', 
+    filterDefault: '#2E2E36',   
   },
 };
 
