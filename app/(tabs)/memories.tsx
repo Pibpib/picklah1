@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable,
-  ActivityIndicator, RefreshControl, Alert, Image, Modal, TextInput, Platform
+  ActivityIndicator, RefreshControl, Alert, Image, Modal, TextInput, Platform,TouchableOpacity
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -249,9 +249,13 @@ export default function MemoriesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.header, { color: theme.text }]}>Memories</Text>
-      </View>
+<View style={styles.header}>
+  <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
+  <TouchableOpacity onPress={onAddPhoto}>
+    <Ionicons name="add" size={24} color={theme.tint} />
+  </TouchableOpacity>
+</View>
+
 
       {/* Upload progress */}
       {uploading && (
@@ -359,9 +363,27 @@ export default function MemoriesScreen() {
 const CARD_RADIUS = 14;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 14 },
+container: {
+  flex: 1,
+  paddingHorizontal: 16,
+  paddingTop: 100,
+},
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  header: { fontSize: 22, fontWeight: '800' },
+header: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  position: "absolute",
+  top: 40,
+  zIndex: 10,
+  paddingHorizontal: 20,
+},
+title: {
+  fontSize: 22,
+  fontWeight: "bold",
+},
+
 
   // Empty state
   emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },

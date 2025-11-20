@@ -3,28 +3,18 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getCountFromServer,
-  Firestore,
-  Timestamp,
-  getDocs,
-  limit,
-} from 'firebase/firestore';
+import {doc,getDoc,collection,query,where,getCountFromServer,Firestore,Timestamp,getDocs,limit,} from 'firebase/firestore';
 
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
 import { auth, db } from '../../services/firebaseConfig';
 import { router } from 'expo-router';
 
-// ⬇️ Plan (Plan B) – still the same overlay/hook
+
 import { usePlan } from '../../hooks/use-plan';
 import PlanOverlay from '../../components/PlanOverlay';
 import type { Plan } from '../../services/plan';
+
 
 type Counts = { activity: number; category: number; mood: number };
 
@@ -72,7 +62,7 @@ export default function UserScreen() {
       try {
         setLoading(true);
 
-        // 🔎 PLAN B: First try user_profile where userID == uid
+       
         const qProfile = query(
           collection(db, 'user_profile'),
           where('userID', '==', u.uid),
@@ -121,7 +111,12 @@ export default function UserScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.header, { color: theme.text }]}>Settings</Text>
+<View style={styles.header}>
+  <Text style={[styles.title, { color: theme.text }]}>Profile</Text>
+  {/* right-side action (optional) */}
+</View>
+
+
 
       {signedIn && (
         <View style={[styles.card, styles.shadow]}>
@@ -237,8 +232,10 @@ function StatCard({ title, value }: { title: string; value: number }) {
 
 /* ------------------------------ styles ------------------------------ */
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 14, gap: 14 },
-  header: { fontSize: 20, fontWeight: '700' },
+  container: {flex: 1,paddingHorizontal: 16,paddingTop: 100, },
+  header: {flexDirection: "row",justifyContent: "space-between",alignItems: "center",width: "100%",position: "absolute",top: 40,zIndex: 10,paddingHorizontal: 20,},
+  title: {fontSize: 22,fontWeight: "bold",},
+
   card: { borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#E7EBEE' },
   cardTitle: { fontSize: 13, fontWeight: '700', opacity: 0.7, marginBottom: 6 },
   row: { paddingVertical: 10, paddingRight: 6, flexDirection: 'row', alignItems: 'center' },

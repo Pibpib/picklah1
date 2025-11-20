@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import Feather from '@expo/vector-icons/Feather';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { IconSymbol } from '../../components/ui/icon-symbol';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -113,14 +114,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="user"
         options={{
-          title: 'Settings',
+          title: 'Profile',
           tabBarIcon: ({ color, focused, size }) =>
             focused ? (
               <ActiveBubble>
-                <Ionicons name="settings" size={24} color={color} />
+                 <FontAwesome5 size={28} name="user" color={color} />
               </ActiveBubble>
             ) : (
-              <Ionicons name="settings" size={24} color={color} />
+                  <FontAwesome5 size={28} name="user" color={color} />
             ),
         }}
       />
