@@ -1,25 +1,40 @@
 // app/(tabs)/user.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import {
-  doc, getDoc, collection, query, where, getCountFromServer, Firestore,Timestamp 
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getCountFromServer,
+  Firestore,
+  Timestamp,
+  getDocs,
+  limit,
 } from 'firebase/firestore';
 
-// RELATIVE imports (we're not using "@/")
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
-import { auth, db } from '../../services/firebaseConfig'; // <- make sure these exist
+import { auth, db } from '../../services/firebaseConfig';
+import { router } from 'expo-router';
 
+// ⬇️ Plan (Plan B) – still the same overlay/hook
+import { usePlan } from '../../hooks/use-plan';
+import PlanOverlay from '../../components/PlanOverlay';
+import type { Plan } from '../../services/plan';
 
 type Counts = { activity: number; category: number; mood: number };
+
 type ProfileDoc = {
   displayName?: string | null;
-  dob?: string | null;
+  dob?: string | Timestamp | null;
   photoURL?: string | null;
-  favCategories?: string[]; // optional
-  favMoods?: string[];      // optional
+  favCategories?: string[];
+  favMoods?: string[];
+  userID?: string; // Plan B: many docs have this, but we also fall back to doc(id=uid)
 };
 
 const initialCounts: Counts = { activity: 0, category: 0, mood: 0 };
@@ -37,34 +52,43 @@ export default function UserScreen() {
   const [loading, setLoading] = useState(true);
   const [fbUser, setFbUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfileDoc>({});
-  const [plan, setPlan] = useState<'Premium' | 'Free' | string>('Free');
   const [counts, setCounts] = useState<Counts>(initialCounts);
 
+  // Live plan from Subscription (Plan B keeps random IDs, we query by userID)
+  const { plan, ready: planReady, uid: planUid } = usePlan();
+  const [planVisible, setPlanVisible] = useState(false);
+
   useEffect(() => {
-    // subscribe to auth and then load data
     const unsub = onAuthStateChanged(auth, async (u) => {
       setFbUser(u);
+
       if (!u) {
+        setProfile({});
+        setCounts(initialCounts);
         setLoading(false);
         return;
       }
+
       try {
         setLoading(true);
 
-        // 1) user_profile/{uid}
-        const pSnap = await getDoc(doc(db, 'user_profile', u.uid));
-        if (pSnap.exists()) setProfile(pSnap.data() as ProfileDoc);
+        // 🔎 PLAN B: First try user_profile where userID == uid
+        const qProfile = query(
+          collection(db, 'user_profile'),
+          where('userID', '==', u.uid),
+          limit(1)
+        );
+        const qSnap = await getDocs(qProfile);
+        if (!qSnap.empty) {
+          setProfile(qSnap.docs[0].data() as ProfileDoc);
+        } else {
+          // ↩️ Fallback: doc id = uid (in case some profiles already normalized)
+          const pSnap = await getDoc(doc(db, 'user_profile', u.uid));
+          if (pSnap.exists()) setProfile(pSnap.data() as ProfileDoc);
+          else setProfile({});
+        }
 
-        // 2) Subscription/{uid} (optional)
-        try {
-          const sSnap = await getDoc(doc(db, 'Subscription', u.uid));
-          if (sSnap.exists()) {
-            const data = sSnap.data() as any;
-            setPlan((data?.plan || 'Free') as string);
-          }
-        } catch { /* ignore if collection absent */ }
-
-        // 3) counts for Activity / Category / Mood
+        // Counters (works for either ownerId or uid fields)
         const [activity, category, mood] = await Promise.all([
           smartCount(db, 'Activity', u.uid),
           smartCount(db, 'Category', u.uid),
@@ -80,74 +104,100 @@ export default function UserScreen() {
     return unsub;
   }, []);
 
-  const name = profile.displayName ?? fbUser?.displayName ?? 'Your Name';
-  const email = fbUser?.email ?? '—';
-  const dob = formatTimestamp(profile.dob);
+  const signedIn = !!fbUser;
 
-  const onLogout = async () => {
+  const name = signedIn ? (profile.displayName ?? fbUser?.displayName ?? '—') : '—';
+  const email = signedIn ? (fbUser?.email ?? '—') : '—';
+  const dob = signedIn ? formatTimestamp(profile.dob) : '—';
+
+  async function onLogout() {
     try {
       await signOut(auth);
-      Alert.alert('Logged out', 'You have been signed out.');
-      // Optionally: router.replace('/auth/login')
-    } catch (e: any) {
-      Alert.alert('Logout failed', String(e?.message ?? e));
+      router.replace('/auth/login');
+    } catch (e) {
+      console.warn('logout error', e);
     }
-  };
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={[styles.header, { color: theme.text }]}>Settings</Text>
 
-      <View style={[styles.card, styles.shadow]}>
-        <Text style={[styles.cardTitle, { color: theme.text }]}>Account</Text>
+      {signedIn && (
+        <View style={[styles.card, styles.shadow]}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Account</Text>
 
-        {loading ? (
-          <View style={{ paddingVertical: 16 }}>
-            <ActivityIndicator />
-          </View>
-        ) : (
-          <>
-            <Row label="Name" value={name} />
-            <Row label="Date of Birth" value={dob} />
-            <Row label="Email" value={email} right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />} />
-            <Row label="Plan" value={String(plan)} last />
-          </>
-        )}
-      </View>
+          {loading ? (
+            <View style={{ paddingVertical: 16 }}>
+              <ActivityIndicator />
+            </View>
+          ) : (
+            <>
+              <Row label="Name" value={name} />
+              <Row label="Date of Birth" value={dob} />
+              <Row label="Email" value={email} right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />} />
+              {/* Tap Plan to open overlay */}
+              <Row
+                label="Plan"
+                value={String(plan)}
+                last
+                onPress={() => setPlanVisible(true)}
+              />
+            </>
+          )}
+        </View>
+      )}
 
-      <View style={styles.row3}>
-        <StatCard title="Activity" value={counts.activity} />
-        <StatCard title="Category" value={counts.category} />
-        <StatCard title="Mood" value={counts.mood} />
-      </View>
+      {signedIn && (
+        <View style={styles.row3}>
+          <StatCard title="Activity" value={counts.activity} />
+          <StatCard title="Category" value={counts.category} />
+          <StatCard title="Mood" value={counts.mood} />
+        </View>
+      )}
 
-      <Pressable
-        onPress={onLogout}
-        style={({ pressed }) => [
-          styles.logoutBtn,
-          styles.shadow,
-          { opacity: pressed ? 0.85 : 1, borderColor: 'rgba(239,68,68,0.25)' },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel="Log out"
-      >
-        <Ionicons name="exit-outline" size={18} color="#EF4444" />
-        <Text style={styles.logoutText}>Log Out</Text>
-      </Pressable>
+      {signedIn ? (
+        <Pressable
+          onPress={onLogout}
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            styles.shadow,
+            { opacity: pressed ? 0.85 : 1, borderColor: 'rgba(239,68,68,0.25)' },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+        >
+          <Ionicons name="exit-outline" size={18} color="#EF4444" />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </Pressable>
+      ) : (
+        !loading && (
+          <Text style={{ color: theme.text, opacity: 0.7 }}>
+            Please log in or sign up to view account settings.
+          </Text>
+        )
+      )}
+
+      {/* Plan overlay (modal) */}
+      <PlanOverlay
+        visible={planVisible}
+        uid={planUid}
+        currentPlan={(plan as Plan)}
+        onClose={() => setPlanVisible(false)}
+        onChanged={() => { /* usePlan updates live; nothing else needed */ }}
+      />
     </View>
   );
 }
 
 /** Tries `ownerId == uid`, falls back to `uid == uid` (whichever exists). */
 async function smartCount(db: Firestore, coll: string, uid: string): Promise<number> {
-  // prefer ownerId
   try {
     const q1 = query(collection(db, coll), where('ownerId', '==', uid));
     const c1 = await getCountFromServer(q1);
     const n1 = Number(c1.data().count || 0);
     if (n1 > 0) return n1;
-  } catch {/* no-op */}
-  // fallback to field 'uid'
+  } catch {}
   try {
     const q2 = query(collection(db, coll), where('uid', '==', uid));
     const c2 = await getCountFromServer(q2);
@@ -201,5 +251,9 @@ const styles = StyleSheet.create({
   statTitle: { fontSize: 12, fontWeight: '600', color: '#6B7883', marginTop: 2 },
   logoutBtn: { marginTop: 8, height: 44, borderRadius: 10, borderWidth: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   logoutText: { color: '#EF4444', fontWeight: '700' },
-  shadow: Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } }, android: { elevation: 1.5 }, default: {} }),
+  shadow: Platform.select({
+    ios: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+    android: { elevation: 1.5 },
+    default: {},
+  }),
 });

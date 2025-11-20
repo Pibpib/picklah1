@@ -13,19 +13,25 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
-// relative imports
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
 import { auth, db, storage } from '../../services/firebaseConfig';
+
+// ⬇️ Plan gating
+import { usePlan } from '../../hooks/use-plan';
+import PlanOverlay from '../../components/PlanOverlay';
+import type { Plan } from '../../services/plan';
 
 type MemoryDoc = {
   id: string;
   userID: string;
   imageURL: string;
   storagePath: string;
-  note?: string;            // keep as string | undefined
+  note?: string;
   createdAt?: Timestamp;
 };
+
+const FREE_LIMIT = 3;
 
 export default function MemoriesScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -47,6 +53,10 @@ export default function MemoriesScreen() {
   const [captionOpen, setCaptionOpen] = useState(false);
   const [captionText, setCaptionText] = useState('');
   const [pendingAsset, setPendingAsset] = useState<{ uri: string; fileName?: string; mimeType?: string } | null>(null);
+
+  // ⬇️ Plan + overlay
+  const { plan, ready: planReady, uid: planUid } = usePlan();
+  const [planVisible, setPlanVisible] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUid(u?.uid ?? null));
@@ -87,14 +97,23 @@ export default function MemoriesScreen() {
     setRefreshing(false);
   };
 
-  // version-safe ImagePicker mediaTypes
+  // ImagePicker mediaTypes (SDK 54 compat)
   const pickerMediaTypes = (ImagePicker as any).MediaType
-    ? [(ImagePicker as any).MediaType.Images]                   // SDK 54+
-    : (ImagePicker as any).MediaTypeOptions.Images;             // older SDKs
+    ? [(ImagePicker as any).MediaType.Images]
+    : (ImagePicker as any).MediaTypeOptions.Images;
 
-  // Step 1: pick photo then open caption modal
+  // Gate: Free users limited to 3
+  const hitFreeCap = planReady && plan === 'Free' && items.length >= FREE_LIMIT;
+
+  // Step 1: pick photo then open caption modal (or show plan overlay if hit cap)
   const onAddPhoto = async () => {
     if (!auth.currentUser) return Alert.alert('Sign in required', 'Please sign in first.');
+
+    if (hitFreeCap) {
+      setPlanVisible(true);
+      return;
+    }
+
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (perm.status !== 'granted') return Alert.alert('Permission needed', 'Please allow photo library access.');
@@ -107,12 +126,11 @@ export default function MemoriesScreen() {
       if (res.canceled) return;
 
       const asset = res.assets[0];
-  setPendingAsset({
-  uri: asset.uri,
-  fileName: (asset.fileName ?? undefined),
-  mimeType: ((asset as any)?.mimeType ?? undefined),
-});
-
+      setPendingAsset({
+        uri: asset.uri,
+        fileName: (asset.fileName ?? undefined),
+        mimeType: ((asset as any)?.mimeType ?? undefined),
+      });
       setCaptionText('');
       setCaptionOpen(true);
     } catch (e: any) {
@@ -124,6 +142,14 @@ export default function MemoriesScreen() {
   // Step 2: upload with progress, then save Firestore (note is undefined if empty)
   const doUpload = async () => {
     if (!pendingAsset || !auth.currentUser) return;
+
+    // Re-check cap right before upload (safety)
+    if (plan === 'Free' && items.length >= FREE_LIMIT) {
+      setCaptionOpen(false);
+      setPlanVisible(true);
+      return;
+    }
+
     try {
       setCaptionOpen(false);
       setUploading(true);
@@ -154,7 +180,7 @@ export default function MemoriesScreen() {
         userID: uidNow,
         imageURL,
         storagePath,
-        note: captionText.trim() || undefined,      // <- TS-safe (no null)
+        note: captionText.trim() || undefined,
         createdAt: serverTimestamp(),
       });
 
@@ -245,7 +271,11 @@ export default function MemoriesScreen() {
         <View style={styles.emptyBox}>
           <View style={styles.emptyCircle}><Ionicons name="images-outline" size={34} color="#9CA3AF" /></View>
           <Text style={styles.emptyTitle}>No memories yet</Text>
-          <Text style={styles.emptySub}>Tap the + button to add your first photo</Text>
+          <Text style={styles.emptySub}>
+            {plan === 'Free'
+              ? `Free plan: you can add up to ${FREE_LIMIT}.`
+              : 'Tap + to add your first photo'}
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -313,6 +343,15 @@ export default function MemoriesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Plan overlay (modal) */}
+      <PlanOverlay
+        visible={planVisible}
+        uid={planUid ?? uid}
+        currentPlan={(plan as Plan)}
+        onClose={() => setPlanVisible(false)}
+        onChanged={() => fetchMemories()}
+      />
     </View>
   );
 }
