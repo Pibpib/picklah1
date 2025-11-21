@@ -185,7 +185,20 @@ export default function ActivityTab() {
             fetchCategories(),
             fetchMoods(),
           ]);
-          const mapped = activityList.map((a: Activity) => {
+
+          // Only show system activities (no createdBy or createdBy === "system") and activities created by the current user
+          const visibleActivities = (activityList as any[]).filter((a) => {
+          
+            if (a.createdBy === "system") {
+              return true;
+            }
+
+            // For user-created activities
+            if (!currentUserId) return false;
+            return a.createdBy === currentUserId;
+          });
+
+          const mapped = visibleActivities.map((a: Activity) => {
             const cat = categoryList.find((c) => c.id === a.categoryId);
             const moodNames = a.moodIds
               .map((mId) => moodList.find((m) => m.id === mId)?.moodName)
@@ -196,9 +209,10 @@ export default function ActivityTab() {
               moodNames,
             };
           });
+
           setActivities(mapped);
-          setCategories(categoryList);   
-          setMoods(moodList);   
+          setCategories(categoryList);
+          setMoods(moodList);
         } else if (selectedTab === "category") {
           const cats = await fetchCategories();
           setCategories(cats);
@@ -213,7 +227,7 @@ export default function ActivityTab() {
       }
     };
     load();
-  }, [selectedTab]);
+  }, [selectedTab, currentUserId]);
 
   const handleAddPress = () => setModalVisible(true);
 
