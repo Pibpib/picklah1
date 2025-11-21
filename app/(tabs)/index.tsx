@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useRouter, useFocusEffect} from "expo-router";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 
@@ -71,28 +71,60 @@ export default function AboutScreen() {
 
 
   // Fetch categories & moods depending on user plan
-  useEffect(() => {
-    const loadFilters = async () => {
-      const catData = await fetchCategories();
-      const moodData = await fetchMoods();
+  useFocusEffect(
+    useCallback(() => {
+      const loadFiltersAndActivities = async () => {
+        // Fetch categories & moods
+        const catData = await fetchCategories();
+        const moodData = await fetchMoods();
 
-      let filteredCats = catData;
-      let filteredMoods = moodData;
+        let filteredCats = catData;
+        let filteredMoods = moodData;
 
-      if (userPlan === "free") {
-        filteredCats = catData.filter((c) => c.accessLevel === "free");
-        filteredMoods = moodData.filter((m) => m.accessLevel === "free");
-      }
+        if (userPlan === "free") {
+          filteredCats = catData.filter((c) => c.accessLevel === "free");
+          filteredMoods = moodData.filter((m) => m.accessLevel === "free");
+        }
 
-      setCategories(filteredCats);
-      setMoods(filteredMoods);
+        setCategories(filteredCats);
+        setMoods(filteredMoods);
 
-      setSelectedCategories(filteredCats.map((c) => c.id));
-      setSelectedMoods(filteredMoods.map((m) => m.id));
-    };
+        setSelectedCategories(filteredCats.map((c) => c.id));
+        setSelectedMoods(filteredMoods.map((m) => m.id));
 
-    if (userPlan) loadFilters();
-  }, [userPlan]);
+        // Fetch activities
+        const allActivities = await fetchActivitiesFiltered(
+          filteredCats.map((c) => c.id),
+          filteredMoods.map((m) => m.id)
+        );
+
+        let filtered = allActivities;
+
+        if (userPlan === "free") {
+          filtered = allActivities.filter((a) => {
+            const category = filteredCats.find((c) => c.id === a.categoryId);
+            const moodAccess = a.moodIds.map(
+              (mid) => filteredMoods.find((m) => m.id === mid)?.accessLevel
+            );
+
+            const allMoodsFree = moodAccess.every((lvl) => lvl === "free");
+            const isCategoryFree = category?.accessLevel === "free";
+            const isSystemActivity = a.createdBy === "system";
+
+            return isSystemActivity && isCategoryFree && allMoodsFree;
+          });
+        } else {
+          filtered = allActivities.filter(
+            (a) => a.createdBy === "system" || a.createdBy === user?.uid
+          );
+        }
+
+        setActivities(filtered);
+      };
+
+      loadFiltersAndActivities();
+    }, [userPlan, user])
+  );
 
   // Fetch filtered activities
   useEffect(() => {
