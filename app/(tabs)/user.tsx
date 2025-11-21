@@ -1,4 +1,3 @@
-// app/(tabs)/user.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

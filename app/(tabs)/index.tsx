@@ -1,19 +1,17 @@
-import React, { useRef, useState, useEffect } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, ScrollView, useColorScheme, Alert, Image } from "react-native";
-import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 
-import { Colors } from "../../constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import Entypo from '@expo/vector-icons/Entypo';
-import {fetchCategories, fetchMoods, fetchActivitiesFiltered, Activity, Category, Mood,} from "../../services/activityService";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { Colors } from "../../constants/theme";
+import { Activity, Category, fetchActivitiesFiltered, fetchCategories, fetchMoods, Mood, } from "../../services/activityService";
 import { auth } from "../../services/firebaseConfig";
-import { getUserProfile,getUserSubscription } from "../../services/userService";
+import { getUserProfile, getUserSubscription } from "../../services/userService";
 
-import spinWheelBoard from "../../assets/images/spinWheelBoard.png";
-import spinBtn from "../../assets/images/spinBtn.png";
 import spinBtnPressed from "../../assets/images/spin-pressed.png";
+import spinBtn from "../../assets/images/spinBtn.png";
 
 export default function AboutScreen() {
   const router = useRouter();
