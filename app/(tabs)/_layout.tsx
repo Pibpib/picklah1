@@ -118,10 +118,10 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused, size }) =>
             focused ? (
               <ActiveBubble>
-                 <FontAwesome5 size={28} name="user" color={color} />
+                 <FontAwesome5 size={24} name="user" color={color} />
               </ActiveBubble>
             ) : (
-                  <FontAwesome5 size={28} name="user" color={color} />
+                  <FontAwesome5 size={24} name="user" color={color} />
             ),
         }}
       />

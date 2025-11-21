@@ -12,6 +12,8 @@ import { getUserProfile, getUserSubscription } from "../../services/userService"
 
 import spinBtnPressed from "../../assets/images/spin-pressed.png";
 import spinBtn from "../../assets/images/spinBtn.png";
+import star1 from "../../assets/images/star1.png";
+import star2 from "../../assets/images/star2.png";
 
 export default function AboutScreen() {
   const router = useRouter();
@@ -434,6 +436,31 @@ export default function AboutScreen() {
             </G>
             </Svg>
         </Animated.View>
+        {/* Star Image overlay */}
+        <Image
+          source={star1} // or star2
+          style={{
+            position: "absolute",
+            bottom: -5, // adjust to position above center
+            left: 0, // adjust to center horizontally
+            width: 80,
+            height: 80,
+            zIndex: 5,
+          }}
+          resizeMode="contain"
+        />
+        <Image
+          source={star2} // or star2
+          style={{
+            position: "absolute",
+            top: 18, // adjust to position above center
+            right: 20, // adjust to center horizontally
+            width: 50,
+            height: 50,
+            zIndex: 5,
+          }}
+          resizeMode="contain"
+        />
 
         {/* Spin Button overlay */}
         <TouchableOpacity
