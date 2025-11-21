@@ -3,9 +3,10 @@ import { ThemedView } from "@/components/themed-view";
 import { auth } from "@/services/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 import { onAuthStateChanged } from "firebase/auth";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Modal,
@@ -42,34 +43,68 @@ export default function ActivityTab() {
   const [newDesc, setNewDesc] = useState("");
   const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
   const [newMoodIds, setNewMoodIds] = useState<string[]>([]);
- 
+  const [newEmoji, setNewEmoji] = useState<string | null>(null);
+  const emojiInputRef = useRef<TextInput | null>(null);
 
   const toggleNewMood = (id: string) => {
     setNewMoodIds(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
   };
-
+  
   const resetCreateForm = () => {
     setNewTitle("");
     setNewDesc("");
     setNewCategoryId(null);
     setNewMoodIds([]);
+    setNewEmoji(null);
   };
-  const handleDeleteActivity = async (id: string) => {
-    try {
-      await deleteActivity(id);
-      setActivities(prev => prev.filter(a => a.id !== id));
-    } catch (e) {
-      console.error("Failed to delete activity", e);
+
+  const handleDeleteActivity = (id: string) => {
+    const target = activities.find((a) => a.id === id);
+    if (target && target.createdBy && target.createdBy !== currentUserId) {
+      Alert.alert(
+        "Not allowed",
+        "This activity was created by the system and cannot be deleted."
+      );
+      return;
     }
+
+    Alert.alert(
+      "Delete activity?",
+      "Are you sure you want to delete this activity? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteActivity(id);
+              setActivities((prev) => prev.filter((a) => a.id !== id));
+            } catch (e) {
+              console.error("Failed to delete activity", e);
+            }
+          },
+        },
+      ]
+    );
   };
   const handleEditActivity = (item: any) => {
+    if (item.createdBy && item.createdBy !== currentUserId) {
+      Alert.alert(
+        "Not allowed",
+        "This activity was created by the system and cannot be edited."
+      );
+      return;
+    }
+
     setEditingId(item.id);
-  
+
     setNewTitle(item.activityTitle);
     setNewDesc(item.description || "");
     setNewCategoryId(item.categoryId);
     setNewMoodIds(item.moodIds || []);
-  
+    setNewEmoji(item.emoji || null);
+
     setModalVisible(true);
   };
   const handleSaveActivity = async () => {
@@ -83,6 +118,7 @@ export default function ActivityTab() {
           description: newDesc,
           categoryId: newCategoryId,
           moodIds: newMoodIds,
+          emoji: newEmoji ?? "",
         });
   
         const catName =
@@ -102,6 +138,7 @@ export default function ActivityTab() {
                   moodIds: newMoodIds,
                   categoryName: catName,
                   moodNames,
+                  emoji: newEmoji ?? "",
                 }
               : a
           )
@@ -199,54 +236,72 @@ export default function ActivityTab() {
         <FlatList
           data={activities}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={[styles.card, { borderColor: theme.border }]}> 
-              {/* Title Row */}
-              <View style={styles.titleRow}>
-                <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  {item.activityTitle}
-                </Text>
-                <View style={[styles.categoryBadge, { backgroundColor: theme.main }]}>
-                  <Text style={[styles.categoryText, { color: theme.text }]}>
-                    {item.categoryName}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Description */}
-              {item.description ? (
-                <Text style={[styles.subtitle, { color: theme.text }]}>
-                  {item.description}
-                </Text>
-              ) : null}
-  {!!item.moodNames?.length && (
-                <View style={styles.moodRow}>
-                  {item.moodNames.map((m: string, i: number) => (
-                    <View
-                      key={`${item.id}-m-${i}`}
-                      style={[styles.categoryBadge, { backgroundColor: theme.mainlight, borderColor: theme.bordertint, borderWidth: 1, marginRight: 10 }]}
+          renderItem={({ item }) => {
+            return (
+              <View style={[styles.card, { borderColor: theme.border }]}>
+                {/* Title Row */}
+                <View style={styles.titleRow}>
+                  <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
+                    {item.emoji ? (
+                      <Text style={styles.emoji}>{item.emoji}</Text>
+                    ) : null}
+                    <Text
+                      style={[styles.cardTitle, { color: theme.text }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
-                      <Text style={{ fontSize: 10 }}>{m}</Text>
-                    </View>
-                  ))}
+                      {item.activityTitle}
+                    </Text>
+                  </View>
+                  <View style={[styles.categoryBadge, { backgroundColor: theme.main }]}>
+                    <Text style={[styles.categoryText, { color: theme.text }]}>
+                      {item.categoryName}
+                    </Text>
+                  </View>
                 </View>
-              )}
 
-              {/* Actions */}
-              <View style={styles.footerActionRow}>
-                <TouchableOpacity
-                  onPress={() => handleEditActivity(item)}
-                  style={{ marginRight: 16 }}
-                >
-                  <Ionicons name="create-outline" size={18} color={theme.text} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDeleteActivity(item.id)}>
-                  <Ionicons name="trash-outline" size={18} color="#E53935" />
-                </TouchableOpacity>
+                {/* Description */}
+                {item.description ? (
+                  <Text style={[styles.subtitle, { color: theme.text }]}>
+                    {item.description}
+                  </Text>
+                ) : null}
+                {!!item.moodNames?.length && (
+                  <View style={styles.moodRow}>
+                    {item.moodNames.map((m: string, i: number) => (
+                      <View
+                        key={`${item.id}-m-${i}`}
+                        style={[
+                          styles.categoryBadge,
+                          {
+                            backgroundColor: theme.mainlight,
+                            borderColor: theme.bordertint,
+                            borderWidth: 1,
+                            marginRight: 10,
+                          },
+                        ]}
+                      >
+                        <Text style={{ fontSize: 10 }}>{m}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Actions – always visible, permission handled in handlers */}
+                <View style={styles.footerActionRow}>
+                  <TouchableOpacity
+                    onPress={() => handleEditActivity(item)}
+                    style={{ marginRight: 16 }}
+                  >
+                    <Ionicons name="create-outline" size={18} color={theme.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteActivity(item.id)}>
+                    <Ionicons name="trash-outline" size={18} color="#E53935" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
-          
+            );
+          }}
         />
       );
     }
@@ -303,6 +358,7 @@ export default function ActivityTab() {
         categoryId: newCategoryId,
         moodIds: newMoodIds,
         createdBy: currentUserId!,
+        emoji: newEmoji ?? "",
       });
   
       const catName =
@@ -319,6 +375,8 @@ export default function ActivityTab() {
         moodIds: newMoodIds,
         categoryName: catName,
         moodNames,
+        emoji: created?.emoji ?? (newEmoji ?? ""),
+        createdBy: created?.createdBy ?? currentUserId,
       } as any;
   
       setActivities((prev) => [mapped, ...prev]);
@@ -377,7 +435,7 @@ export default function ActivityTab() {
       {/* Data List */}
       <View style={{ flex: 1, padding: 10 }}>{renderList()}</View>
 
-      {/* Add Overlay (index1 style) */}
+      {/* Add Overlay */}
       <Modal
         visible={modalVisible}
         transparent
@@ -394,6 +452,35 @@ export default function ActivityTab() {
          
             {selectedTab === 'activity' && (
               <>
+              {/* Emoji input using system keyboard */}
+                <View style={styles.emojiHeaderRow}>
+                  <TouchableOpacity
+                    style={styles.emojiPicker}
+                    onPress={() => emojiInputRef.current?.focus()}
+                  >
+                    <Text style={styles.emojiPickerText}>
+                      {newEmoji || "+"}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.emojiHintText}>Emoji (optional)</Text>
+
+                  {/* Hidden TextInput to capture emoji from keyboard */}
+                  <TextInput
+                  ref={emojiInputRef}
+                  value={newEmoji ?? ""}
+                  onChangeText={(text) => {
+                    // turn full string into emoji/codepoint array
+                    const chars = Array.from(text || "");
+                    // keep the LAST emoji/char the user typed
+                    const last = chars[chars.length - 1] || "";
+                    setNewEmoji(last || null);
+                  }}
+                  style={{ position: "absolute", width: 0, height: 0, opacity: 0 }}
+                  keyboardType="default"
+                />
+                </View> 
+                
+
                 <TextInput
                   placeholder="Activity Title"
                   value={newTitle}
@@ -509,6 +596,55 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
     marginBottom: 4,
+  },
+  emoji: {
+    fontSize: 40,
+    width: 60, 
+    height: 60, 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  emojiHeaderRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  emojiPicker: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#AEB7C2",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiPickerText: {
+    fontSize: 24,
+  },
+  emojiHintText: {
+    marginLeft: 8,
+    fontSize: 12,
+    color: "#555",
+  },
+  emojiOptionsRow: {
+    width: "100%",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 8,
+    gap: 8,
+  },
+  emojiOptionButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#AEB7C2",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiOptionText: {
+    fontSize: 20,
   },
   card: {
     borderRadius: 10,

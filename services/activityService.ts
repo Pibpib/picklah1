@@ -107,8 +107,9 @@ export async function createActivity(params: {
   categoryId: string;             // collection: Category
   moodIds: string[];              // collection: Mood (array of refs)
   createdBy?: string;
+  emoji?: string;
 }) {
-  const { activityTitle, description, categoryId, moodIds, createdBy} = params;
+  const { activityTitle, description, categoryId, moodIds, createdBy, emoji } = params;
 
   const categoryRef = doc(db, "Category", categoryId);
   const moodRefs = moodIds.map((id) => doc(db, "Mood", id));
@@ -119,7 +120,7 @@ export async function createActivity(params: {
     categoryID: categoryRef,  
     moodID: moodRefs,         // array of DocumentReferences
     createdBy,
-   
+    emoji: emoji ?? "",
   });
 
   
@@ -130,6 +131,7 @@ export async function createActivity(params: {
     categoryId,
     moodIds,
     createdBy,
+    emoji: emoji ?? "",
   };
 }
 
