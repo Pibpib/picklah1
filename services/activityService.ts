@@ -154,3 +154,91 @@ export async function updateActivity(id: string, data: Partial<Activity>) {
     throw error;
   }
 }
+
+export async function addCategory(params: {
+  categoryName: string;
+  accessLevel: string;
+  createdBy: string;
+  description?: string;
+}) {
+  try {
+    const ref = await addDoc(collection(db, "Category"), {
+      categoryName: params.categoryName,
+      accessLevel: params.accessLevel,
+      createdBy: params.createdBy,
+      description: params.description ?? "",
+    });
+
+    return { id: ref.id, ...params };
+  } catch (error) {
+    console.error("Error adding category:", error);
+    throw error;
+  }
+}
+
+export async function updateCategory(
+  id: string,
+  data: Partial<Category>
+) {
+  try {
+    await updateDoc(doc(db, "Category", id), data);
+    return true;
+  } catch (error) {
+    console.error("Error updating category:", error);
+    throw error;
+  }
+}
+
+export async function deleteCategory(id: string) {
+  try {
+    await deleteDoc(doc(db, "Category", id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    throw error;
+  }
+}
+
+export async function addMood(params: {
+  moodName: string;
+  accessLevel: string;
+  createdBy: string;
+  description?: string;
+}) {
+  try {
+    const ref = await addDoc(collection(db, "Mood"), {
+      moodName: params.moodName,
+      accessLevel: params.accessLevel,
+      createdBy: params.createdBy,
+      description: params.description ?? "",
+    });
+
+    return { id: ref.id, ...params };
+  } catch (error) {
+    console.error("Error adding mood:", error);
+    throw error;
+  }
+}
+
+export async function updateMood(
+  id: string,
+  data: Partial<Mood>
+) {
+  try {
+    await updateDoc(doc(db, "Mood", id), data);
+    return true;
+  } catch (error) {
+    console.error("Error updating mood:", error);
+    throw error;
+  }
+}
+
+export async function deleteMood(id: string) {
+  try {
+    await deleteDoc(doc(db, "Mood", id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting mood:", error);
+    throw error;
+  }
+}

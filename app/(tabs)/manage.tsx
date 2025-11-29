@@ -28,7 +28,13 @@ import {
   fetchCategories,
   fetchMoods,
   Mood,
-  updateActivity
+  updateActivity,
+  addCategory,
+  addMood,
+  updateCategory,
+  updateMood,
+  deleteCategory,
+  deleteMood
 } from "../../services/activityService";
 
 export default function ActivityTab() {
@@ -43,6 +49,7 @@ export default function ActivityTab() {
   const [newDesc, setNewDesc] = useState("");
   const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
   const [newMoodIds, setNewMoodIds] = useState<string[]>([]);
+
   const [newEmoji, setNewEmoji] = useState<string | null>(null);
   const emojiInputRef = useRef<TextInput | null>(null);
 
@@ -250,71 +257,83 @@ export default function ActivityTab() {
         <FlatList
           data={activities}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            return (
-              <View style={[styles.card, { borderColor: theme.border }]}>
-                {/* Title Row */}
-                <View style={styles.titleRow}>
-                  <View style={{ flexDirection: "row", alignItems: "center", flexShrink: 1 }}>
-                    {item.emoji ? (
-                      <Text style={styles.emoji}>{item.emoji}</Text>
-                    ) : null}
-                    <Text
-                      style={[styles.cardTitle, { color: theme.text }]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {item.activityTitle}
-                    </Text>
-                  </View>
-                  <View style={[styles.categoryBadge, { backgroundColor: theme.main }]}>
-                    <Text style={[styles.categoryText, { color: theme.text }]}>
-                      {item.categoryName}
-                    </Text>
-                  </View>
-                </View>
+renderItem={({ item }) => {
+  return (
+    <View style={[styles.card, { borderColor: theme.border }]}>
 
-                {/* Description */}
-                {item.description ? (
-                  <Text style={[styles.subtitle, { color: theme.text }]}>
-                    {item.description}
-                  </Text>
-                ) : null}
-                {!!item.moodNames?.length && (
-                  <View style={styles.moodRow}>
-                    {item.moodNames.map((m: string, i: number) => (
-                      <View
-                        key={`${item.id}-m-${i}`}
-                        style={[
-                          styles.categoryBadge,
-                          {
-                            backgroundColor: theme.mainlight,
-                            borderColor: theme.bordertint,
-                            borderWidth: 1,
-                            marginRight: 10,
-                          },
-                        ]}
-                      >
-                        <Text style={{ fontSize: 10 }}>{m}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
+      {/* ROW: Emoji + Title + Description */}
+      <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+        
+        {/* Emoji */}
+        {item.emoji ? (
+          <Text style={styles.emoji}>{item.emoji}</Text>
+        ) : (
+          <Text style={[styles.emoji, { color: "transparent" }]}>⬤</Text>
+        )}
 
-                {/* Actions – always visible, permission handled in handlers */}
-                <View style={styles.footerActionRow}>
-                  <TouchableOpacity
-                    onPress={() => handleEditActivity(item)}
-                    style={{ marginRight: 16 }}
-                  >
-                    <Ionicons name="create-outline" size={18} color={theme.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDeleteActivity(item.id)}>
-                    <Ionicons name="trash-outline" size={18} color="#E53935" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
+        {/* Title + Description */}
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>
+            {item.activityTitle}
+          </Text>
+
+          {item.description ? (
+            <Text style={[styles.subtitle, { color: theme.text }]}>
+              {item.description}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Row: Category + Mood */}
+      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+        
+        {/* Category */}
+        <View style={[styles.categoryBadge, { backgroundColor: theme.main, marginRight: 8 }]}>
+          <Text style={[styles.categoryText, { color: theme.text }]}>
+            {item.categoryName}
+          </Text>
+        </View>
+
+        {/* Mood badges */}
+        {!!item.moodNames?.length &&
+          item.moodNames.map((m: string, i: number) => (
+            <View
+              key={`${item.id}-m-${i}`}
+              style={[
+                styles.categoryBadge,
+                {
+                  backgroundColor: theme.mainlight,
+                  borderColor: theme.bordertint,
+                  borderWidth: 1,
+                  marginRight: 8,
+                },
+              ]}
+            >
+              <Text style={{ fontSize: 10 }}>{m}</Text>
+            </View>
+          ))}
+
+      </View>
+
+      {/* Actions */}
+      {item.createdBy !== "system" && (
+        <View style={styles.footerActionRow}>
+          <TouchableOpacity
+            onPress={() => handleEditActivity(item)}
+            style={{ marginRight: 16 }}
+          >
+            <Ionicons name="create-outline" size={18} color={theme.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => handleDeleteActivity(item.id)}>
+            <Ionicons name="trash-outline" size={18} color="#E53935" />
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
           }}
         />
       );
@@ -616,7 +635,8 @@ const styles = StyleSheet.create({
     width: 60, 
     height: 60, 
     justifyContent: "center", 
-    alignItems: "center" 
+    alignItems: "center",
+    textAlign: "center",
   },
   emojiHeaderRow: {
     width: "100%",
