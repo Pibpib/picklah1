@@ -40,6 +40,39 @@ export async function fetchCategories(): Promise<Category[]> {
   }));
 }
 
+// Create a new category
+export async function createCategory(params: {
+  categoryName: string;
+  accessLevel: string;
+  createdBy: string; 
+  description?: string;
+}) {
+  const ref = await addDoc(collection(db, "Category"), params);
+  return { id: ref.id, ...params };
+}
+
+// Update category
+export async function updateCategory(id: string, data: Partial<Category>) {
+  try {
+    await updateDoc(doc(db, "Category", id), data);
+    return true;
+  } catch (error) {
+    console.error("Error updating category:", error);
+    throw error;
+  }
+}
+
+// Delete category
+export async function deleteCategory(id: string) {
+  try {
+    await deleteDoc(doc(db, "Category", id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    throw error;
+  }
+}
+
 // Fetch moods from Firestore
 export async function fetchMoods(): Promise<Mood[]> {
   const querySnapshot = await getDocs(collection(db, "Mood"));
@@ -50,6 +83,39 @@ export async function fetchMoods(): Promise<Mood[]> {
     createdBy: doc.data().createdBy,
     description: doc.data().description,
   }));
+}
+
+// Create a new mood
+export async function createMood(params: {
+  moodName: string;
+  accessLevel: string; // "free" | "premium"
+  createdBy: string;   // "system" | userId
+  description?: string;
+}) {
+  const ref = await addDoc(collection(db, "Mood"), params);
+  return { id: ref.id, ...params };
+}
+
+// Update mood
+export async function updateMood(id: string, data: Partial<Mood>) {
+  try {
+    await updateDoc(doc(db, "Mood", id), data);
+    return true;
+  } catch (error) {
+    console.error("Error updating mood:", error);
+    throw error;
+  }
+}
+
+// Delete mood
+export async function deleteMood(id: string) {
+  try {
+    await deleteDoc(doc(db, "Mood", id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting mood:", error);
+    throw error;
+  }
 }
 
 // Fetch activities from Firestore
@@ -151,94 +217,6 @@ export async function updateActivity(id: string, data: Partial<Activity>) {
     return true;
   } catch (error) {
     console.error("Error updating activity:", error);
-    throw error;
-  }
-}
-
-export async function addCategory(params: {
-  categoryName: string;
-  accessLevel: string;
-  createdBy: string;
-  description?: string;
-}) {
-  try {
-    const ref = await addDoc(collection(db, "Category"), {
-      categoryName: params.categoryName,
-      accessLevel: params.accessLevel,
-      createdBy: params.createdBy,
-      description: params.description ?? "",
-    });
-
-    return { id: ref.id, ...params };
-  } catch (error) {
-    console.error("Error adding category:", error);
-    throw error;
-  }
-}
-
-export async function updateCategory(
-  id: string,
-  data: Partial<Category>
-) {
-  try {
-    await updateDoc(doc(db, "Category", id), data);
-    return true;
-  } catch (error) {
-    console.error("Error updating category:", error);
-    throw error;
-  }
-}
-
-export async function deleteCategory(id: string) {
-  try {
-    await deleteDoc(doc(db, "Category", id));
-    return true;
-  } catch (error) {
-    console.error("Error deleting category:", error);
-    throw error;
-  }
-}
-
-export async function addMood(params: {
-  moodName: string;
-  accessLevel: string;
-  createdBy: string;
-  description?: string;
-}) {
-  try {
-    const ref = await addDoc(collection(db, "Mood"), {
-      moodName: params.moodName,
-      accessLevel: params.accessLevel,
-      createdBy: params.createdBy,
-      description: params.description ?? "",
-    });
-
-    return { id: ref.id, ...params };
-  } catch (error) {
-    console.error("Error adding mood:", error);
-    throw error;
-  }
-}
-
-export async function updateMood(
-  id: string,
-  data: Partial<Mood>
-) {
-  try {
-    await updateDoc(doc(db, "Mood", id), data);
-    return true;
-  } catch (error) {
-    console.error("Error updating mood:", error);
-    throw error;
-  }
-}
-
-export async function deleteMood(id: string) {
-  try {
-    await deleteDoc(doc(db, "Mood", id));
-    return true;
-  } catch (error) {
-    console.error("Error deleting mood:", error);
     throw error;
   }
 }

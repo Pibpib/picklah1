@@ -3,53 +3,27 @@ import { ThemedView } from "@/components/themed-view";
 import { auth } from "@/services/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 import { onAuthStateChanged } from "firebase/auth";
+import { useNavigation } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View
-} from "react-native";
+import {ActivityIndicator, Alert, Dimensions, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View} from "react-native";
 import { Colors } from "../../constants/theme";
-import {
-  Activity,
-  Category,
-  createActivity,
-  deleteActivity,
-  fetchActivitiesFiltered,
-  fetchCategories,
-  fetchMoods,
-  Mood,
-  updateActivity,
-  addCategory,
-  addMood,
-  updateCategory,
-  updateMood,
-  deleteCategory,
-  deleteMood
-} from "../../services/activityService";
+import {Activity,  createActivity, deleteActivity, fetchActivitiesFiltered, updateActivity,
+  Category, fetchCategories, createCategory, updateCategory, deleteCategory, 
+  Mood, fetchMoods, createMood,updateMood,deleteMood,} from "../../services/activityService";
 
 export default function ActivityTab() {
+  const navigation = useNavigation<any>();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
-  // UI State copied from index1 style
+  // UI State copied from index style
   const [selectedTab, setSelectedTab] = useState<"activity" | "category" | "mood">("activity");
   const [modalVisible, setModalVisible] = useState(false);
-  // minimal modal form state (kept local to this screen)
+  // minimal modal form state 
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newCategoryId, setNewCategoryId] = useState<string | null>(null);
   const [newMoodIds, setNewMoodIds] = useState<string[]>([]);
-
   const [newEmoji, setNewEmoji] = useState<string | null>(null);
   const emojiInputRef = useRef<TextInput | null>(null);
 
@@ -162,8 +136,96 @@ export default function ActivityTab() {
       setEditingId(null);
     }
   };
-  
+  const handleSaveCategory = async () => {
+  if (!newTitle) return;
 
+  try {
+    if (editingId) {
+      await updateCategory(editingId, { categoryName: newTitle });
+      setCategories(prev => prev.map(c => c.id === editingId ? { ...c, categoryName: newTitle } : c));
+    } else {
+      const created = await createCategory({
+        categoryName: newTitle,
+        accessLevel: "premium",       
+        createdBy: currentUserId!,
+      });
+      setCategories(prev => [created, ...prev]);
+    }
+  } catch (e) {
+    console.error("Failed to save category", e);
+  } finally {
+    setModalVisible(false);
+    setNewTitle("");
+    setEditingId(null);
+  }
+};
+
+const handleDeleteCategory = (id: string) => {
+  Alert.alert(
+    "Delete category?",
+    "Are you sure you want to delete this category?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteCategory(id);
+            setCategories(prev => prev.filter(c => c.id !== id));
+          } catch (e) {
+            console.error("Failed to delete category", e);
+          }
+        },
+      },
+    ]
+  );
+};
+const handleSaveMood = async () => {
+  if (!newTitle) return;
+
+  try {
+    if (editingId) {
+      await updateMood(editingId, { moodName: newTitle });
+      setMoods(prev => prev.map(m => m.id === editingId ? { ...m, moodName: newTitle } : m));
+    } else {
+      const created = await createMood({
+        moodName: newTitle,
+        accessLevel: "premium", 
+        createdBy: currentUserId!,
+      });
+      setMoods(prev => [created, ...prev]);
+    }
+  } catch (e) {
+    console.error("Failed to save mood", e);
+  } finally {
+    setModalVisible(false);
+    setNewTitle("");
+    setEditingId(null);
+  }
+};
+
+const handleDeleteMood = (id: string) => {
+  Alert.alert(
+    "Delete mood?",
+    "Are you sure you want to delete this mood?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteMood(id);
+            setMoods(prev => prev.filter(m => m.id !== id));
+          } catch (e) {
+            console.error("Failed to delete mood", e);
+          }
+        },
+      },
+    ]
+  );
+};
   // Data state
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<any[]>([]);
@@ -171,6 +233,8 @@ export default function ActivityTab() {
   const [moods, setMoods] = useState<Mood[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userPlan, setUserPlan] = useState<"free" | "premium">("free"); // default free
+
   
   // Get current user ID
   useEffect(() => {
@@ -222,10 +286,12 @@ export default function ActivityTab() {
           setMoods(moodList);
         } else if (selectedTab === "category") {
           const cats = await fetchCategories();
-          setCategories(cats);
+          const visibleCats = cats.filter(c => c.createdBy === "system" || c.createdBy === currentUserId);
+          setCategories(visibleCats);
         } else {
           const ms = await fetchMoods();
-          setMoods(ms);
+          const visibleMoods = ms.filter(m => m.createdBy === "system" || m.createdBy === currentUserId);
+          setMoods(visibleMoods);
         }
       } catch (e) {
         console.error("Error loading manage data", e);
@@ -236,7 +302,37 @@ export default function ActivityTab() {
     load();
   }, [selectedTab, currentUserId]);
 
-  const handleAddPress = () => setModalVisible(true);
+  const handleAddPress = () => 
+    {
+        if (userPlan === "free") {
+          Alert.alert(
+            "Upgrade Required",
+            "Creating new items requires a Premium plan. Upgrade to continue.",
+            [
+              {
+                text: "Cancel",
+                style: "cancel"
+              },
+              {
+                text: "Upgrade",
+                onPress: () => {
+                  // redirect to user.tsx
+                  navigation.navigate("user"); 
+                }
+              }
+            ]
+          );
+          return; // block modal from opening
+        }
+
+      setEditingId(null);
+      setNewTitle("");
+      setNewDesc("");
+      setNewEmoji(null);
+      setNewCategoryId(null);
+      setNewMoodIds([]);
+      setModalVisible(true);
+    }
 
   const getModalTitle = () => {
     switch (selectedTab) {
@@ -342,37 +438,49 @@ renderItem={({ item }) => {
     if (selectedTab === "category") {
       return (
         <FlatList
-          data={categories}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={[styles.card, { borderColor: theme.border }]}> 
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
-                {item.categoryName}
-              </Text>
-              {item.accessLevel && (
-                <Text style={[styles.subtitle, { color: theme.text }]}>Access: {item.accessLevel}</Text>
-              )}
-            </View>
-          )}
-        />
+    data={categories}
+    keyExtractor={(item) => item.id}
+    renderItem={({ item }) => (
+      <View style={[styles.card, { borderColor: theme.border }]}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>{item.categoryName}</Text>
+
+        {item.createdBy === currentUserId && (
+        <View style={styles.footerActionRow}>
+          <TouchableOpacity onPress={() => { setEditingId(item.id); setNewTitle(item.categoryName); setModalVisible(true); }}>
+            <Ionicons name="create-outline" size={18} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleDeleteCategory(item.id)} style={{ marginLeft: 16 }}>
+            <Ionicons name="trash-outline" size={18} color="#E53935" />
+          </TouchableOpacity>
+        </View>
+        )}
+      </View>
+    )}
+  />
       );
     }
 
     return (
       <FlatList
-        data={moods}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.card, { borderColor: theme.border }]}> 
-            <Text style={[styles.cardTitle, { color: theme.text }]}>
-              {item.moodName}
-            </Text>
-            {item.accessLevel && (
-              <Text style={[styles.subtitle, { color: theme.text }]}>Access: {item.accessLevel}</Text>
-            )}
-          </View>
+    data={moods}
+    keyExtractor={(item) => item.id}
+    renderItem={({ item }) => (
+      <View style={[styles.card, { borderColor: theme.border }]}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>{item.moodName}</Text>
+
+        {item.createdBy === currentUserId && (
+        <View style={styles.footerActionRow}>
+          <TouchableOpacity onPress={() => { setEditingId(item.id); setNewTitle(item.moodName); setModalVisible(true); }}>
+            <Ionicons name="create-outline" size={18} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleDeleteMood(item.id)} style={{ marginLeft: 16 }}>
+            <Ionicons name="trash-outline" size={18} color="#E53935" />
+          </TouchableOpacity>
+        </View>
         )}
-      />
+      </View>
+    )}
+  />
     );
   };
 
@@ -580,21 +688,48 @@ renderItem={({ item }) => {
           </View>
               </>
             )}
-
             {selectedTab === 'category' && (
               <>
                 <TextInput
                   placeholder="Category Name"
                   value={newTitle}
                   onChangeText={setNewTitle}
-                  style={{ width: '100%', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 8 }}
+                  style={{
+                    width: '100%',
+                    borderWidth: 1,
+                    borderColor: '#ddd',
+                    borderRadius: 8,
+                    padding: 10,
+                    marginBottom: 8,
+                  }}
                 />
-                <TouchableOpacity
-                  onPress={() => { setModalVisible(false); setNewTitle(""); }}
-                  style={{ alignSelf: 'flex-end', backgroundColor: '#333', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginBottom: 10 }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '600' }}>Create</Text>
-                </TouchableOpacity>
+
+                {/* Footer buttons */}
+                <View style={styles.footerRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalVisible(false);
+                      resetCreateForm();
+                      setEditingId(null);
+                    }}
+                    style={styles.btnCancel}
+                  >
+                    <Text style={styles.btnCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleSaveCategory}
+                    disabled={!newTitle}
+                    style={[
+                      styles.btnCreate,
+                      !newTitle && { opacity: 0.6 },
+                    ]}
+                  >
+                    <Text style={styles.btnCreateText}>
+                      {editingId ? "Update" : "Create"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 
@@ -604,16 +739,45 @@ renderItem={({ item }) => {
                   placeholder="Mood Name"
                   value={newTitle}
                   onChangeText={setNewTitle}
-                  style={{ width: '100%', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 8 }}
+                  style={{
+                    width: '100%',
+                    borderWidth: 1,
+                    borderColor: '#ddd',
+                    borderRadius: 8,
+                    padding: 10,
+                    marginBottom: 8,
+                  }}
                 />
-                <TouchableOpacity
-                  onPress={() => { setModalVisible(false); setNewTitle(""); }}
-                  style={{ alignSelf: 'flex-end', backgroundColor: '#333', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, marginBottom: 10 }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '600' }}>Create</Text>
-                </TouchableOpacity>
+
+                {/* Footer buttons */}
+                <View style={styles.footerRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalVisible(false);
+                      resetCreateForm();
+                      setEditingId(null);
+                    }}
+                    style={styles.btnCancel}
+                  >
+                    <Text style={styles.btnCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleSaveMood}
+                    disabled={!newTitle}
+                    style={[
+                      styles.btnCreate,
+                      !newTitle && { opacity: 0.6 },
+                    ]}
+                  >
+                    <Text style={styles.btnCreateText}>
+                      {editingId ? "Update" : "Create"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
+
             </ScrollView>
            </View>
         </View>
@@ -837,6 +1001,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-
-
-

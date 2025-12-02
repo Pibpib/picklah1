@@ -249,7 +249,7 @@ export default function MemoriesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-<View style={styles.header}>
+<View style={styles.topBar}>
   <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
   <TouchableOpacity onPress={onAddPhoto}>
     <Ionicons name="add" size={24} color={theme.tint} />
@@ -283,6 +283,7 @@ export default function MemoriesScreen() {
         </View>
       ) : (
         <FlatList
+        style={{ paddingHorizontal: 16, paddingTop: 8 }}
           data={items}
           keyExtractor={(it) => it.id}
           renderItem={renderItem}
@@ -365,28 +366,21 @@ const CARD_RADIUS = 14;
 const styles = StyleSheet.create({
 container: {
   flex: 1,
-  paddingHorizontal: 16,
-  paddingTop: 100,
 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-header: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  width: "100%",
-  position: "absolute",
-  top: 40,
-  zIndex: 10,
-  paddingHorizontal: 20,
-},
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 10,
+  },
 title: {
   fontSize: 22,
   fontWeight: "bold",
 },
-
-
   // Empty state
-  emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6},
   emptyCircle: {
     width: 72, height: 72, borderRadius: 36, backgroundColor: '#F3F4F6',
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
