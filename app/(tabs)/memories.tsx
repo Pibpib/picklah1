@@ -1,16 +1,11 @@
 // app/(tabs)/memories.tsx
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, Pressable,
-  ActivityIndicator, RefreshControl, Alert, Image, Modal, TextInput, Platform,TouchableOpacity
+import {View, Text, StyleSheet, FlatList, Pressable,ActivityIndicator, RefreshControl, Alert, Image, Modal, TextInput, Platform,TouchableOpacity
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
-import {
-  collection, query, where, orderBy, limit,
-  getDocs, addDoc, serverTimestamp, deleteDoc, doc, Timestamp,
-} from 'firebase/firestore';
+import {collection, query, where, orderBy, limit,getDocs, addDoc, serverTimestamp, deleteDoc, doc, Timestamp,} from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
 import { useColorScheme } from '../../hooks/use-color-scheme';
@@ -27,7 +22,7 @@ type MemoryDoc = {
   userID: string;
   imageURL: string;
   storagePath: string;
-  note?: string;
+   note?: string | null; 
   createdAt?: Timestamp;
 };
 
@@ -323,7 +318,7 @@ export default function MemoriesScreen() {
       <Modal visible={captionOpen} transparent animationType="slide" onRequestClose={() => setCaptionOpen(false)}>
         <View style={styles.captionBackdrop}>
           <View style={styles.captionCard}>
-            <Text style={styles.captionTitle}>Add a caption (optional)</Text>
+            <Text style={styles.captionTitle}>Add a caption </Text>
             <TextInput
               value={captionText}
               onChangeText={setCaptionText}
