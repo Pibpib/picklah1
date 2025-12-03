@@ -38,7 +38,7 @@ export default function MiniGamesPage() {
         }}
 
       >
-        <Text style={[styles.playButtonText, { color: theme.text }]}>Play</Text>
+        <Text style={[styles.playButtonText, { color: colorScheme ==='dark' ?theme.background: theme.text}]}>Play</Text>
       </TouchableOpacity>
     </View>
   );

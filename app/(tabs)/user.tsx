@@ -118,24 +118,23 @@ export default function UserScreen() {
 
 
       {signedIn && (
-        <View style={[styles.card, styles.shadow]}>
-          <Text style={[styles.cardTitle, { color: theme.text }]}>Account</Text>
-
+        <View style={[styles.card, styles.shadow, { backgroundColor: theme.border, }]}>
           {loading ? (
             <View style={{ paddingVertical: 16 }}>
               <ActivityIndicator />
             </View>
           ) : (
             <>
-              <Row label="Name" value={name} />
-              <Row label="Date of Birth" value={dob} />
-              <Row label="Email" value={email} right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />} />
+              <Row label="Name" value={name} theme={theme} />
+              <Row label="Date of Birth" value={dob} theme={theme} />
+              <Row label="Email" value={email} right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />} theme={theme} />
               {/* Tap Plan to open overlay */}
               <Row
                 label="Plan"
                 value={String(plan)}
                 last
                 onPress={() => setPlanVisible(true)}
+                theme={theme}
               />
             </>
           )}
@@ -144,9 +143,9 @@ export default function UserScreen() {
 
       {signedIn && (
         <View style={styles.row3}>
-          <StatCard title="Activity" value={counts.activity} />
-          <StatCard title="Category" value={counts.category} />
-          <StatCard title="Mood" value={counts.mood} />
+          <StatCard title="Activity" value={counts.activity} theme={theme} />
+          <StatCard title="Category" value={counts.category} theme={theme} />
+          <StatCard title="Mood" value={counts.mood} theme={theme} />
         </View>
       )}
 
@@ -201,10 +200,9 @@ async function smartCount(db: Firestore, coll: string, uid: string): Promise<num
   }
 }
 
-/* ---------- UI helpers ---------- */
 function Row({
-  label, value, right, last = false, onPress,
-}: { label: string; value: string; right?: React.ReactNode; last?: boolean; onPress?: () => void }) {
+  label, value, right, last = false, onPress, theme,
+}: { label: string; value: string; right?: React.ReactNode; last?: boolean; onPress?: () => void; theme: typeof Colors['light'] }) {
   return (
     <Pressable
       onPress={onPress}
@@ -212,35 +210,34 @@ function Row({
       android_ripple={onPress ? { color: '#0000000f' } : undefined}
     >
       <View style={{ flex: 1 }}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        <Text style={styles.rowValue}>{value}</Text>
+        <Text style={[styles.rowLabel, { color: theme.text }]}>{label}</Text>
+        <Text style={[styles.rowValue, { color: theme.text }]}>{value}</Text>
       </View>
       {right}
     </Pressable>
   );
 }
 
-function StatCard({ title, value }: { title: string; value: number }) {
+function StatCard({ title, value, theme }: { title: string; value: number; theme: typeof Colors['light'] }) {
   return (
-    <View style={[styles.statCard, styles.shadow]}>
+    <View style={[styles.statCard, styles.shadow, { backgroundColor: theme.border }]}>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
+      <Text style={[styles.statTitle, { color: theme.text }]}>{title}</Text>
     </View>
   );
 }
 
-/* ------------------------------ styles ------------------------------ */
 const styles = StyleSheet.create({
   container: {flex: 1,paddingHorizontal: 16,paddingTop: 80, },
   header: {flexDirection: "row",justifyContent: "space-between",alignItems: "center",width: "100%",position: "absolute",top: 40,zIndex: 10,paddingHorizontal: 20,},
   title: {fontSize: 22,fontWeight: "bold",},
 
-  card: { borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#E7EBEE', marginBottom: 16 },
-  cardTitle: { fontSize: 13, fontWeight: '700', opacity: 0.7, marginBottom: 6 },
+  card: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#E7EBEE', marginBottom: 16 },
+  cardTitle: { fontSize: 13, fontWeight: 'bold', opacity: 0.7, marginBottom: 6 },
   row: { paddingVertical: 10, paddingRight: 6, flexDirection: 'row', alignItems: 'center' },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: '#EEF2F4' },
-  rowLabel: { fontSize: 12, fontWeight: '600', color: '#6B7883', marginBottom: 2 },
-  rowValue: { fontSize: 14, fontWeight: '600', color: '#0F172A' },
+  rowLabel: { fontSize: 12, marginBottom: 2 },
+  rowValue: { fontSize: 14, fontWeight: 'bold'},
   row3: { flexDirection: 'row', gap: 12 },
   statCard: { flex: 1, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#E7EBEE' },
   statValue: { fontSize: 22, fontWeight: '800', color: '#F59E0B' },

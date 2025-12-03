@@ -75,7 +75,7 @@ export default function SignupScreen() {
       </Text>
 
       {/* Display Name */}
-      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+      <View style={[styles.inputContainer, { borderColor: theme.text, backgroundColor: colorScheme === "dark" ? "#2E2E36" : "#f9f9f9",}]}>
         <Ionicons name="person-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Display Name"
@@ -87,7 +87,7 @@ export default function SignupScreen() {
       </View>
 
       {/* Email */}
-      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+      <View style={[styles.inputContainer, { borderColor: theme.text, backgroundColor: colorScheme === "dark" ? "#2E2E36" : "#f9f9f9",}]}>
         <Ionicons name="mail-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Email"
@@ -101,7 +101,7 @@ export default function SignupScreen() {
       </View>
 
       {/* Password */}
-      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+      <View style={[styles.inputContainer, { borderColor: theme.text, backgroundColor: colorScheme === "dark" ? "#2E2E36" : "#f9f9f9",}]}>
         <Ionicons name="lock-closed-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Password"
@@ -121,7 +121,7 @@ export default function SignupScreen() {
       </View>
 
       {/* Confirm Password */}
-      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+      <View style={[styles.inputContainer, { borderColor: theme.text, backgroundColor: colorScheme === "dark" ? "#2E2E36" : "#f9f9f9",}]}>
         <Ionicons name="lock-closed-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Confirm Password"
@@ -145,7 +145,7 @@ export default function SignupScreen() {
         <Button title="Sign Up" onPress={handleSignup} color={theme.tint} />
       </View>
 
-      {/* ✅ Sign in link */}
+      {/* Sign in link */}
       <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 20 }}>
         <Text style={{ color: theme.text }}>Already have an account? </Text>
         <Link href="/auth/login" style={{ color: theme.tint, fontWeight: "600" }}>

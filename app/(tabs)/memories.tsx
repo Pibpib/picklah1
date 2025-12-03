@@ -244,13 +244,12 @@ export default function MemoriesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-<View style={styles.topBar}>
-  <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
-  <TouchableOpacity onPress={onAddPhoto}>
-    <Ionicons name="add" size={24} color={theme.tint} />
-  </TouchableOpacity>
-</View>
-
+      <View style={styles.topBar}>
+        <Text style={[styles.title, { color: theme.text }]}>Memories</Text>
+        <TouchableOpacity onPress={onAddPhoto}>
+          <Ionicons name="add" size={24} color={theme.tint} />
+        </TouchableOpacity>
+      </View>
 
       {/* Upload progress */}
       {uploading && (

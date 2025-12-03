@@ -8,6 +8,7 @@ import {
   where,
   limit,
   getDocs,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
@@ -32,6 +33,10 @@ export async function getUserSubscriptionByUserId(uid: string) {
   const snap = await getDocs(qRef);
   if (snap.empty) return null;
   return snap.docs[0].data();
+}
+
+export async function saveUserProfile(uid: string, profileData: any) {
+  await setDoc(doc(db, "user_profile", uid), profileData);
 }
 
 /** Live listener via userID field */

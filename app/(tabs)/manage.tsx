@@ -10,6 +10,8 @@ import { Colors } from "../../constants/theme";
 import {Activity,  createActivity, deleteActivity, fetchActivitiesFiltered, updateActivity,
   Category, fetchCategories, createCategory, updateCategory, deleteCategory, 
   Mood, fetchMoods, createMood,updateMood,deleteMood,} from "../../services/activityService";
+import { listenUserSubscriptionByUserId } from "@/services/userService";
+import { list } from "firebase/storage";
 
 export default function ActivityTab() {
   const navigation = useNavigation<any>();
@@ -233,8 +235,7 @@ const handleDeleteMood = (id: string) => {
   const [moods, setMoods] = useState<Mood[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [userPlan, setUserPlan] = useState<"free" | "premium">("free"); // default free
-
+  const [userPlan, setUserPlan] = useState<"free" | "premium">("free");
   
   // Get current user ID
   useEffect(() => {
@@ -245,6 +246,21 @@ const handleDeleteMood = (id: string) => {
   
     return unsub;
   }, []);
+
+  // Listen to user subscription
+  useEffect(() => {
+    if (!currentUserId) return;
+    
+    const unsubPlan = listenUserSubscriptionByUserId(
+      currentUserId,
+      (sub) => {
+        const plan = (sub?.planType as "free" | "premium") ?? "free";
+        setUserPlan(plan);
+      }
+    );
+
+    return () => unsubPlan();
+  }, [currentUserId]);
   // Load data depending on tab
   useEffect(() => {
     const load = async () => {
@@ -259,11 +275,9 @@ const handleDeleteMood = (id: string) => {
 
           // Only show system activities (no createdBy or createdBy === "system") and activities created by the current user
           const visibleActivities = (activityList as any[]).filter((a) => {
-          
             if (a.createdBy === "system") {
               return true;
             }
-
             // For user-created activities
             if (!currentUserId) return false;
             return a.createdBy === currentUserId;
@@ -386,7 +400,7 @@ renderItem={({ item }) => {
         
         {/* Category */}
         <View style={[styles.categoryBadge, { backgroundColor: theme.main, marginRight: 8 }]}>
-          <Text style={[styles.categoryText, { color: theme.text }]}>
+          <Text style={[styles.categoryText]}>
             {item.categoryName}
           </Text>
         </View>
@@ -531,13 +545,13 @@ renderItem={({ item }) => {
     <ThemedView style={[{ flex: 1, backgroundColor: theme.background }]}> 
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <ThemedText type="title" style={[styles.title, { color: theme.text }]}>Manage</ThemedText>
+        <Text style={[styles.title, { color: theme.text }]}>Manage</Text>
         <TouchableOpacity onPress={handleAddPress}>
           <Ionicons name="add" size={24} color={theme.tint} />
         </TouchableOpacity>
       </View>
 
-      {/* Tab Buttons (index1 style) */}
+      {/* Tab Buttons */}
       <View style={[styles.tabRow, { backgroundColor: theme.border }]}> 
         <TouchableOpacity
           style={[
@@ -546,8 +560,21 @@ renderItem={({ item }) => {
           ]}
           onPress={() => setSelectedTab("activity")}
         >
-          <Ionicons name="list" size={22} color={theme.text} style={{ marginBottom: 4 }} />
-          <Text style={[styles.tabText, { color: theme.text }]}>Activity</Text>
+          <Ionicons name="list" size={22} color={theme.text} 
+          style={{ marginBottom: 4, color:colorScheme === "dark" && selectedTab === "activity"? "black": theme.text, }} />
+          <Text
+            style={[
+              styles.tabText,
+              {
+                color:
+                  colorScheme === "dark" && selectedTab === "activity"
+                    ? "black"
+                    : theme.text,
+              },
+            ]}
+          >
+            Activity
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -557,8 +584,21 @@ renderItem={({ item }) => {
           ]}
           onPress={() => setSelectedTab("category")}
         >
-          <Ionicons name="folder-outline" size={22} color={theme.text} style={{ marginBottom: 4 }} />
-          <Text style={[styles.tabText, { color: theme.text }]}>Category</Text>
+          <Ionicons name="folder-outline" size={22} color={theme.text} 
+          style={{ marginBottom: 4, color:colorScheme === "dark" && selectedTab === "category"? "black": theme.text, }} />
+          <Text
+            style={[
+              styles.tabText,
+              {
+                color:
+                  colorScheme === "dark" && selectedTab === "category"
+                    ? "black"
+                    : theme.text,
+              },
+            ]}
+          >
+            Category
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -568,8 +608,21 @@ renderItem={({ item }) => {
           ]}
           onPress={() => setSelectedTab("mood")}
         >
-          <Ionicons name="happy-outline" size={22} color={theme.text} style={{ marginBottom: 4 }} />
-          <Text style={[styles.tabText, { color: theme.text }]}>Mood</Text>
+          <Ionicons name="happy-outline" size={22} color={theme.text} 
+          style={{ marginBottom: 4, color:colorScheme === "dark" && selectedTab === "mood"? "black": theme.text, } } />
+          <Text
+            style={[
+              styles.tabText,
+              {
+                color:
+                  colorScheme === "dark" && selectedTab === "mood"
+                    ? "black"
+                    : theme.text,
+              },
+            ]}
+          >
+            Mood
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -888,7 +941,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 37,
+    paddingTop: 40,
     paddingBottom: 10,
   },
   tabRow: {

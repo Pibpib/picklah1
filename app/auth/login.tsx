@@ -73,11 +73,11 @@ export default function LoginScreen() {
       </Text>
 
       {/* Email */}
-      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+      <View style={[styles.inputContainer, { borderColor: theme.text, backgroundColor: colorScheme === "dark" ? "#2E2E36" : "#f9f9f9",}]}>
         <Ionicons name="mail-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Email"
-          placeholderTextColor="#aaa"
+          placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
           value={email}
           onChangeText={setEmail}
           style={[styles.input, { color: theme.text }]}
@@ -87,7 +87,7 @@ export default function LoginScreen() {
       </View>
 
       {/* Password */}
-      <View style={[styles.inputContainer, { borderColor: theme.text }]}>
+      <View style={[styles.inputContainer, { borderColor: theme.text, backgroundColor: colorScheme === "dark" ? "#2E2E36" : "#f9f9f9",}]}>
         <Ionicons name="lock-closed-outline" size={20} color={theme.text} style={styles.icon} />
         <TextInput
           placeholder="Password"
@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 15,
-    backgroundColor: "#f9f9f9",
   },
   icon: {
     marginRight: 8,

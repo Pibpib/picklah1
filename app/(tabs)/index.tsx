@@ -6,6 +6,7 @@ import Svg, { G, Path, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Colors } from "../../constants/theme";
+
 import { Activity, Category, fetchActivitiesFiltered, fetchCategories, fetchMoods, Mood, } from "../../services/activityService";
 import { auth } from "../../services/firebaseConfig";
 import star1 from "../../assets/images/star1.png";
@@ -20,7 +21,7 @@ import spinBtnPressed from "../../assets/images/spin-pressed.png";
 import AdGate from "../../components/AdGate";
 
 // gating config
-const SPINS_PER_NOTICE = 3;   // free users see an ad every 3 spins
+const SPINS_PER_NOTICE = 2;   
 const AD_SECONDS = 15;
 
 export default function SpinScreen() {
@@ -275,6 +276,8 @@ export default function SpinScreen() {
           description: "",
         }];
 
+        const wheelSlice1 = colorScheme === "dark" ? "#2E2E36" : theme.background;
+        const wheelSlice2 = colorScheme === "dark" ? "#FCBF49" : theme.mainlight;
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -342,7 +345,7 @@ export default function SpinScreen() {
                   ]}
                   onPress={() => toggleMood(mood.id)}
                 >
-                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: isSelected ? "bold" : "normal" }}>
+                  <Text style={{  fontSize: 12, fontWeight: isSelected ? "bold" : "normal", color: isSelected && colorScheme ==='dark' ? theme.background : theme.text }}>
                     {mood.moodName}
                   </Text>
                 </TouchableOpacity>
@@ -379,7 +382,7 @@ export default function SpinScreen() {
             strokeWidth={4}
           />
         </Svg>
-
+            
         <Animated.View style={{ transform: [{ rotate: spinAnim.interpolate({inputRange:[0,360],outputRange:["0deg","360deg"]}) }] }}>
           <Svg width={radius * 2} height={radius * 2}>
             <G>

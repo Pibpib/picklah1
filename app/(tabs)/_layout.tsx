@@ -25,7 +25,10 @@ export default function TabLayout() {
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: theme.mainlight,
+        backgroundColor: 
+          colorScheme === 'dark'
+          ? "#BC810F"
+          : theme.mainlight,
       }}
     >
       {children}
