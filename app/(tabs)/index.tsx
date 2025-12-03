@@ -472,6 +472,18 @@ export default function SpinScreen() {
               <Text style={{ fontSize: 20, fontWeight: "bold", color: theme.text }}>×</Text>
             </TouchableOpacity>
 
+            {selectedActivity.emoji ? (
+              <Text
+                style={{
+                  fontSize: 60,
+                  textAlign: "center",
+                  marginBottom: 8,
+                }}
+              >
+                {selectedActivity.emoji}
+              </Text>
+            ) : null}
+
             <Text style={[styles.alertTitle, { color: theme.text }]}>{selectedActivity.activityTitle}</Text>
 
             {selectedActivity.description ? (
