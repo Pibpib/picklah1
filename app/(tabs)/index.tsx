@@ -511,7 +511,7 @@ export default function SpinScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "flex-start", alignItems: "center" },
-  filterMenu: { borderRadius: 12, position: "absolute", top: 90, width: "90%", padding: 16 },
+  filterMenu: { borderRadius: 12, position: "absolute", top: 80, padding: 16, marginHorizontal: 16},
   filterRow: { flexDirection: "row", marginBottom: 10 },
   filterItem: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: "#FCBF49", borderRadius: 20, marginRight: 10 },
   header: {

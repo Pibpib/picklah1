@@ -88,8 +88,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "bold" },
   card: {
     borderRadius: 10,
-    padding: 16,
-    marginHorizontal: 6,
+    padding: 20,
     marginVertical: 8,
     borderWidth: 1,
     shadowColor: "#000",
