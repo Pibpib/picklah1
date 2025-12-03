@@ -231,11 +231,11 @@ function StatCard({ title, value }: { title: string; value: number }) {
 
 /* ------------------------------ styles ------------------------------ */
 const styles = StyleSheet.create({
-  container: {flex: 1,paddingHorizontal: 16,paddingTop: 100, },
+  container: {flex: 1,paddingHorizontal: 16,paddingTop: 80, },
   header: {flexDirection: "row",justifyContent: "space-between",alignItems: "center",width: "100%",position: "absolute",top: 40,zIndex: 10,paddingHorizontal: 20,},
   title: {fontSize: 22,fontWeight: "bold",},
 
-  card: { borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#E7EBEE' },
+  card: { borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#E7EBEE', marginBottom: 16 },
   cardTitle: { fontSize: 13, fontWeight: '700', opacity: 0.7, marginBottom: 6 },
   row: { paddingVertical: 10, paddingRight: 6, flexDirection: 'row', alignItems: 'center' },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: '#EEF2F4' },
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, backgroundColor: '#fff', borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#E7EBEE' },
   statValue: { fontSize: 22, fontWeight: '800', color: '#F59E0B' },
   statTitle: { fontSize: 12, fontWeight: '600', color: '#6B7883', marginTop: 2 },
-  logoutBtn: { marginTop: 8, height: 44, borderRadius: 10, borderWidth: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  logoutBtn: { marginTop: 16, height: 44, borderRadius: 10, borderWidth: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   logoutText: { color: '#EF4444', fontWeight: '700' },
   shadow: Platform.select({
     ios: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },

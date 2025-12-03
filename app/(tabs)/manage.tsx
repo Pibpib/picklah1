@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontWeight: "700",
+    fontWeight: "bold",
     fontSize: 22,
   },
   subtitle: {
@@ -887,13 +887,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingTop: 37,
     paddingBottom: 10,
   },
   tabRow: {
     flexDirection: "row",
     justifyContent: "space-around",
+    marginTop: 2,
     marginBottom: 8,
     borderRadius: 20,
     marginHorizontal: 16,

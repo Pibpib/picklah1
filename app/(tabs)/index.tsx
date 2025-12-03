@@ -277,7 +277,6 @@ export default function SpinScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header (same layout as other screens) */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>Spin</Text>
         <TouchableOpacity onPress={() => setShowFilter(!showFilter)}>

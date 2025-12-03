@@ -22,7 +22,7 @@ type MemoryDoc = {
   userID: string;
   imageURL: string;
   storagePath: string;
-   note?: string | null; 
+  note?: string | null; 
   createdAt?: Timestamp;
 };
 
@@ -278,7 +278,7 @@ export default function MemoriesScreen() {
         </View>
       ) : (
         <FlatList
-        style={{ paddingHorizontal: 16, paddingTop: 8 }}
+        style={{ paddingHorizontal: 16, paddingTop: 4 }}
           data={items}
           keyExtractor={(it) => it.id}
           renderItem={renderItem}
@@ -366,7 +366,7 @@ container: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 40,
     paddingBottom: 10,
   },
@@ -387,7 +387,7 @@ title: {
   progressBox: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#FFF7ED', borderColor: '#FED7AA', borderWidth: 1,
-    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, marginBottom: 8,
+    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, marginBottom: 8, marginHorizontal: 16,
   },
   progressTrack: { flex: 1, height: 8, backgroundColor: '#FDEAD7', borderRadius: 999 },
   progressFill: { height: 8, backgroundColor: '#F59E0B', borderRadius: 999 },
