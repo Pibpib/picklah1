@@ -1,4 +1,3 @@
-import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { auth } from "@/services/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,8 +9,9 @@ import { Colors } from "../../constants/theme";
 import {Activity,  createActivity, deleteActivity, fetchActivitiesFiltered, updateActivity,
   Category, fetchCategories, createCategory, updateCategory, deleteCategory, 
   Mood, fetchMoods, createMood,updateMood,deleteMood,} from "../../services/activityService";
-import { listenUserSubscriptionByUserId } from "@/services/userService";
-import { list } from "firebase/storage";
+import { listenUserSubscriptionByUserId, UserPlan } from "../../services/userService";
+import Purchases from "react-native-purchases";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 
 export default function ActivityTab() {
   const navigation = useNavigation<any>();
@@ -253,9 +253,9 @@ const handleDeleteMood = (id: string) => {
     
     const unsubPlan = listenUserSubscriptionByUserId(
       currentUserId,
-      (sub) => {
-        const plan = (sub?.planType as "free" | "premium") ?? "free";
-        setUserPlan(plan);
+      (sub: any) => {
+      const plan = (sub?.planType as "free" | "premium") ?? "free";
+      setUserPlan(plan);
       }
     );
 

@@ -13,22 +13,21 @@ export function usePlan(uid?: string | null) {
       console.log("[usePlan] No UID yet");
       return;
     }
-    console.log("[usePlan] Running for UID:", uid);
+
+    console.log("[usePlan] Initializing for UID:", uid);
 
     const updatePlan = async (customerInfo: any) => {
       console.log("[usePlan] CustomerInfo received:", JSON.stringify(customerInfo, null, 2));
 
-      // Check if Premium entitlement is active
-      const entitlement = customerInfo.entitlements.active["Premium"];
+      const entitlement = customerInfo.entitlements.active["PickLah Pro"];
       const hasPremium = !!entitlement;
 
       const newPlan: Plan = hasPremium ? "Premium" : "Free";
       setPlan(newPlan);
 
-      console.log(`[usePlan] Updating Firestore subscription for UID: ${uid}, plan: ${newPlan}`);
+      console.log(`[usePlan] Updating Firestore for UID: ${uid}, plan: ${newPlan}`);
 
       try {
-        // Upsert subscription in Firestore
         await setDoc(
           doc(db, "Subscription", uid),
           {
@@ -40,18 +39,18 @@ export function usePlan(uid?: string | null) {
             purchaseDate: entitlement?.purchaseDate ? new Date(entitlement.purchaseDate) : null,
             expirationDate: entitlement?.expirationDate ? new Date(entitlement.expirationDate) : null,
           },
-          { merge: true } // ensures document is created or updated
+          { merge: true }
         );
         console.log("[usePlan] Firestore subscription updated successfully");
       } catch (e) {
-        console.error("[usePlan] Error updating Firestore subscription:", e);
+        console.error("[usePlan] Error updating Firestore:", e);
       }
 
       setReady(true);
     };
 
+    // Initialize by fetching current customer info
     const init = async () => {
-      console.log("[usePlan] Init called for UID:", uid);
       try {
         const customerInfo = await Purchases.getCustomerInfo();
         await updatePlan(customerInfo);
@@ -62,13 +61,11 @@ export function usePlan(uid?: string | null) {
 
     init();
 
-    // Listen to real-time RevenueCat updates
+    // Listen to real-time updates from RevenueCat
     Purchases.addCustomerInfoUpdateListener(updatePlan);
-    return () => {
-      // Cleanup handled by RevenueCat SDK
-    };
+
+    // Cleanup not needed (SDK handles it)
   }, [uid]);
 
-  console.log("[usePlan] Returning:", { plan, ready, uid });
   return { plan, ready, uid };
 }

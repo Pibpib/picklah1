@@ -35,6 +35,7 @@ const formatTimestamp = (ts?: string | Timestamp | null) => {
 };
 
 export default function UserScreen() {
+  
   const scheme = useColorScheme() ?? 'light';
   const theme = Colors[scheme];
 
@@ -45,18 +46,8 @@ export default function UserScreen() {
 
   // Live plan from Subscription
 // Use fbUser?.uid as a dependency for usePlan
-const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
+  const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
   const [planVisible, setPlanVisible] = useState(false);
-
-  // Log every time plan updates
-  useEffect(() => {
-    console.log("[UserScreen] usePlan update:", {
-      plan,
-      planReady,
-      planUid,
-      fbUserUid: fbUser?.uid ?? null
-    });
-  }, [plan, planReady, planUid, fbUser]);
 
   // Auth state change
   useEffect(() => {
@@ -97,7 +88,7 @@ const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
 
         // Fetch counts
         const [activity, category, mood] = await Promise.all([
-          smartCount(db, 'Activity', u.uid),
+          smartCount(db, 'Activiiasgdfty', u.uid),
           smartCount(db, 'Category', u.uid),
           smartCount(db, 'Mood', u.uid),
         ]);
@@ -129,6 +120,7 @@ const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
     }
   }
 
+  
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -195,7 +187,7 @@ const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
       <PlanOverlay
         visible={planVisible}
         uid={planUid ?? null}
-        currentPlan={(plan as Plan)}
+        currentPlan={plan}
         onClose={() => setPlanVisible(false)}
         onChanged={() => console.log("[UserScreen] PlanOverlay onChanged")}
       />

@@ -1,4 +1,4 @@
-import { useRouter, useFocusEffect} from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Alert, Animated, Easing, Image, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import Svg, { G, Path, Text as SvgText } from "react-native-svg";
@@ -8,17 +8,16 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { Colors } from "../../constants/theme";
 
 import { Activity, Category, fetchActivitiesFiltered, fetchCategories, fetchMoods, Mood, } from "../../services/activityService";
-import { auth } from "../../services/firebaseConfig";
+import { auth, db } from "../../services/firebaseConfig";
 import star1 from "../../assets/images/star1.png";
 import star2 from "../../assets/images/star2.png";
-import {
-  getUserProfile,
-  listenUserSubscriptionByUserId,
-} from "../../services/userService";
+import { getUserProfile, listenUserSubscriptionByUserId, UserPlan } from "../../services/userService";
 
 import spinBtn from "../../assets/images/spinBtn.png";
 import spinBtnPressed from "../../assets/images/spin-pressed.png";
 import AdGate from "../../components/AdGate";
+import Purchases from "react-native-purchases";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 
 // gating config
 const SPINS_PER_NOTICE = 2;   
@@ -35,6 +34,13 @@ export default function SpinScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [userPlan, setUserPlan] = useState<"free" | "premium">("free");
+
+  useEffect(() => {
+    if (user) {
+      console.log("User ID:", user.uid);
+      console.log("Plan Type:", userPlan);
+    }
+  }, [user, userPlan]);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [moods, setMoods] = useState<Mood[]>([]);

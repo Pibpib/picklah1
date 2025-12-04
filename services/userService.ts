@@ -144,8 +144,8 @@ export function usePremium() {
             status: hasPremium ? "active" : "inactive",
             lastChecked: new Date(),
             productIdentifier: entitlement?.productIdentifier || null,
-            purchaseDate: entitlement?.purchaseDate ? new Date(entitlement.purchaseDate) : null,
-            expirationDate: entitlement?.expirationDate ? new Date(entitlement.expirationDate) : null,
+            purchaseDate: entitlement?.latestPurchaseDateMillis ? new Date(entitlement.latestPurchaseDateMillis) : null,
+            expirationDate: entitlement?.expirationDateMillis ? new Date(entitlement.expirationDateMillis) : null,
           },
           { merge: true }
         );
@@ -160,4 +160,99 @@ export function usePremium() {
   }, []);
 
   return { isPremium, loading };
+}
+
+export async function syncRevenueCatSubscription(uid: string) {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const entitlement = customerInfo.entitlements.active["Premium"];
+    const hasPremium = !!entitlement;
+
+    await setDoc(
+      doc(db, "Subscription", uid),
+      {
+        userID: uid,
+        planType: hasPremium ? "Premium" : "Free",
+        status: hasPremium ? "active" : "inactive",
+        lastChecked: new Date(),
+        productIdentifier: entitlement?.productIdentifier || null,
+        purchaseDate: entitlement?.latestPurchaseDateMillis ? new Date(entitlement.latestPurchaseDateMillis) : null,
+        expirationDate: entitlement?.expirationDateMillis ? new Date(entitlement.expirationDateMillis) : null,
+      },
+      { merge: true }
+    );
+
+    return hasPremium;
+  } catch (e) {
+    console.error("[syncRevenueCatSubscription] Error updating Firestore:", e);
+    return false;
+  }
+}
+
+export function listenToRevenueCat(uid: string, setPlan: (plan: "Free" | "Premium") => void) {
+  const listener = async (customerInfo: any) => {
+    const entitlement = customerInfo.entitlements.active["Premium"];
+    const hasPremium = !!entitlement;
+
+    // Update Firestore
+    await syncRevenueCatSubscription(uid);
+
+    // Update local state
+    setPlan(hasPremium ? "Premium" : "Free");
+  };
+
+  Purchases.addCustomerInfoUpdateListener(listener);
+
+  return () => Purchases.removeCustomerInfoUpdateListener(listener);
+}
+
+export type UserPlan = "free" | "premium";
+
+export function listenUserSubscriptionByUserId(
+  uid: string,
+  cb: (sub: { planType: UserPlan }) => void
+) {
+  const subDocRef = doc(db, "Subscription", uid);
+  const unsubFirestore = onSnapshot(subDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const planType: UserPlan =
+        data?.planType?.toLowerCase() === "premium" ? "premium" : "free";
+      cb({ planType });
+    }
+  });
+
+  const listener = async (customerInfo: any) => {
+    const entitlement = customerInfo.entitlements.active["Premium"];
+    const hasPremium = !!entitlement;
+
+    const planType: UserPlan = hasPremium ? "premium" : "free";
+
+    await setDoc(
+      subDocRef,
+      {
+        userID: uid,
+        planType: hasPremium ? "Premium" : "Free",
+        status: hasPremium ? "active" : "inactive",
+        lastChecked: new Date(),
+        productIdentifier: entitlement?.productIdentifier || null,
+        purchaseDate: entitlement?.latestPurchaseDateMillis
+          ? new Date(entitlement.latestPurchaseDateMillis)
+          : null,
+        expirationDate: entitlement?.expirationDateMillis
+          ? new Date(entitlement.expirationDateMillis)
+          : null,
+      },
+      { merge: true }
+    );
+
+    cb({ planType });
+  };
+
+  Purchases.addCustomerInfoUpdateListener(listener);
+
+  return () => {
+    unsubFirestore();
+    Purchases.removeCustomerInfoUpdateListener(listener);
+  };
 }

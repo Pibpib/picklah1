@@ -7,19 +7,37 @@ import 'react-native-reanimated';
 import Purchases from 'react-native-purchases';
 import { useFonts, Roboto_300Light, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
   // RevenueCat initialization
   useEffect(() => {
     const iosApiKey = 'test_rpTQNQDgiGUMBthzMtLmUbBYRXR';
     const androidApiKey = 'test_rpTQNQDgiGUMBthzMtLmUbBYRXR';
 
     Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
-    Purchases.configure({ apiKey: Platform.OS === 'ios' ? iosApiKey : androidApiKey });
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      try {
+        // Configure RevenueCat per logged-in user
+        await Purchases.configure({
+          apiKey: Platform.OS === 'ios' ? iosApiKey : androidApiKey,
+          appUserID: user.uid,
+        });
+
+        console.log('[RevenueCat] configured for UID:', user.uid);
+      } catch (e) {
+        console.error('[RevenueCat] configuration failed:', e);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
   }, []);
 
   const [fontsLoaded] = useFonts({
