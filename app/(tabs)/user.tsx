@@ -8,9 +8,9 @@ import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
 import { auth, db } from '../../services/firebaseConfig';
 import { router } from 'expo-router';
+import { usePremium } from "@/services/userService";
 
-
-import { usePlan } from '../../hooks/use-plan';
+import { usePlan } from '../../hooks/usePlan';
 import PlanOverlay from '../../components/PlanOverlay';
 import type { Plan } from '../../services/plan';
 
@@ -23,7 +23,7 @@ type ProfileDoc = {
   photoURL?: string | null;
   favCategories?: string[];
   favMoods?: string[];
-  userID?: string; // Plan B: many docs have this, but we also fall back to doc(id=uid)
+  userID?: string; 
 };
 
 const initialCounts: Counts = { activity: 0, category: 0, mood: 0 };
@@ -43,15 +43,29 @@ export default function UserScreen() {
   const [profile, setProfile] = useState<ProfileDoc>({});
   const [counts, setCounts] = useState<Counts>(initialCounts);
 
-  // Live plan from Subscription (Plan B keeps random IDs, we query by userID)
-  const { plan, ready: planReady, uid: planUid } = usePlan();
+  // Live plan from Subscription
+// Use fbUser?.uid as a dependency for usePlan
+const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
   const [planVisible, setPlanVisible] = useState(false);
 
+  // Log every time plan updates
+  useEffect(() => {
+    console.log("[UserScreen] usePlan update:", {
+      plan,
+      planReady,
+      planUid,
+      fbUserUid: fbUser?.uid ?? null
+    });
+  }, [plan, planReady, planUid, fbUser]);
+
+  // Auth state change
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
+      console.log("[UserScreen] Auth state changed:", u?.uid ?? "null");
       setFbUser(u);
 
       if (!u) {
+        console.log("[UserScreen] No user signed in. Resetting profile and counts.");
         setProfile({});
         setCounts(initialCounts);
         setLoading(false);
@@ -59,66 +73,70 @@ export default function UserScreen() {
       }
 
       try {
+        console.log("[UserScreen] Loading profile and counts for UID:", u.uid);
         setLoading(true);
 
-       
-        const qProfile = query(
-          collection(db, 'user_profile'),
-          where('userID', '==', u.uid),
-          limit(1)
-        );
+        // Fetch profile
+        const qProfile = query(collection(db, 'user_profile'), where('userID', '==', u.uid), limit(1));
         const qSnap = await getDocs(qProfile);
         if (!qSnap.empty) {
-          setProfile(qSnap.docs[0].data() as ProfileDoc);
+          const data = qSnap.docs[0].data() as ProfileDoc;
+          console.log("[UserScreen] Profile fetched from query:", data);
+          setProfile(data);
         } else {
-          // ↩️ Fallback: doc id = uid (in case some profiles already normalized)
           const pSnap = await getDoc(doc(db, 'user_profile', u.uid));
-          if (pSnap.exists()) setProfile(pSnap.data() as ProfileDoc);
-          else setProfile({});
+          if (pSnap.exists()) {
+            const data = pSnap.data() as ProfileDoc;
+            console.log("[UserScreen] Profile fetched from doc fallback:", data);
+            setProfile(data);
+          } else {
+            console.log("[UserScreen] No profile found. Using empty.");
+            setProfile({});
+          }
         }
 
-        // Counters (works for either ownerId or uid fields)
+        // Fetch counts
         const [activity, category, mood] = await Promise.all([
           smartCount(db, 'Activity', u.uid),
           smartCount(db, 'Category', u.uid),
           smartCount(db, 'Mood', u.uid),
         ]);
+        console.log("[UserScreen] Counts fetched:", { activity, category, mood });
         setCounts({ activity, category, mood });
       } catch (e: any) {
+        console.error("[UserScreen] Load failed:", e);
         Alert.alert('Load failed', String(e?.message ?? e));
       } finally {
         setLoading(false);
+        console.log("[UserScreen] Loading finished.");
       }
     });
     return unsub;
   }, []);
 
   const signedIn = !!fbUser;
-
   const name = signedIn ? (profile.displayName ?? fbUser?.displayName ?? '—') : '—';
   const email = signedIn ? (fbUser?.email ?? '—') : '—';
   const dob = signedIn ? formatTimestamp(profile.dob) : '—';
 
   async function onLogout() {
     try {
+      console.log("[UserScreen] Logging out...");
       await signOut(auth);
       router.replace('/auth/login');
     } catch (e) {
-      console.warn('logout error', e);
+      console.warn('[UserScreen] logout error', e);
     }
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-<View style={styles.header}>
-  <Text style={[styles.title, { color: theme.text }]}>Profile</Text>
-  {/* right-side action (optional) */}
-</View>
-
-
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.text }]}>Profile</Text>
+      </View>
 
       {signedIn && (
-        <View style={[styles.card, styles.shadow, { backgroundColor: theme.border, }]}>
+        <View style={[styles.card, styles.shadow, { backgroundColor: theme.border }]}>
           {loading ? (
             <View style={{ paddingVertical: 16 }}>
               <ActivityIndicator />
@@ -127,15 +145,20 @@ export default function UserScreen() {
             <>
               <Row label="Name" value={name} theme={theme} />
               <Row label="Date of Birth" value={dob} theme={theme} />
-              <Row label="Email" value={email} right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />} theme={theme} />
-              {/* Tap Plan to open overlay */}
+              <Row
+                label="Email"
+                value={email}
+                right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />}
+                theme={theme}
+              />
               <Row
                 label="Plan"
-                value={String(plan)}
+                value={planReady ? plan : "Loading..."}
                 last
                 onPress={() => setPlanVisible(true)}
                 theme={theme}
               />
+              {console.log("[UserScreen] Profile card rendered with plan:", plan)}
             </>
           )}
         </View>
@@ -157,8 +180,6 @@ export default function UserScreen() {
             styles.shadow,
             { opacity: pressed ? 0.85 : 1, borderColor: 'rgba(239,68,68,0.25)' },
           ]}
-          accessibilityRole="button"
-          accessibilityLabel="Log out"
         >
           <Ionicons name="exit-outline" size={18} color="#EF4444" />
           <Text style={styles.logoutText}>Log Out</Text>
@@ -171,34 +192,29 @@ export default function UserScreen() {
         )
       )}
 
-      {/* Plan overlay (modal) */}
       <PlanOverlay
         visible={planVisible}
-        uid={planUid}
+        uid={planUid ?? null}
         currentPlan={(plan as Plan)}
         onClose={() => setPlanVisible(false)}
-        onChanged={() => { /* usePlan updates live; nothing else needed */ }}
+        onChanged={() => console.log("[UserScreen] PlanOverlay onChanged")}
       />
     </View>
   );
 }
 
-/** Tries `ownerId == uid`, falls back to `uid == uid` (whichever exists). */
+/** Count documents for a user by `createdBy` */
 async function smartCount(db: Firestore, coll: string, uid: string): Promise<number> {
   try {
-    const q1 = query(collection(db, coll), where('ownerId', '==', uid));
-    const c1 = await getCountFromServer(q1);
-    const n1 = Number(c1.data().count || 0);
-    if (n1 > 0) return n1;
-  } catch {}
-  try {
-    const q2 = query(collection(db, coll), where('uid', '==', uid));
-    const c2 = await getCountFromServer(q2);
-    return Number(c2.data().count || 0);
-  } catch {
+    const q = query(collection(db, coll), where('createdBy', '==', uid));
+    const c = await getCountFromServer(q);
+    return Number(c.data().count || 0);
+  } catch (e) {
+    console.error('Error counting', coll, e);
     return 0;
   }
 }
+
 
 function Row({
   label, value, right, last = false, onPress, theme,

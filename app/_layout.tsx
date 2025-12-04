@@ -1,17 +1,35 @@
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { useFonts, Roboto_300Light, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from "@expo-google-fonts/roboto";
+import Purchases from 'react-native-purchases';
+import { useFonts, Roboto_300Light, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+export const unstable_settings = { anchor: '(tabs)' };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
+  // RevenueCat initialization
+  useEffect(() => {
+    const iosApiKey = 'test_rpTQNQDgiGUMBthzMtLmUbBYRXR';
+    const androidApiKey = 'test_rpTQNQDgiGUMBthzMtLmUbBYRXR';
+
+    Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
+    Purchases.configure({ apiKey: Platform.OS === 'ios' ? iosApiKey : androidApiKey });
+  }, []);
+
+  const [fontsLoaded] = useFonts({
+    Roboto_300Light,
+    Roboto_400Regular,
+    Roboto_500Medium,
+    Roboto_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
