@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import {doc,getDoc,collection,query,where,getCountFromServer,Firestore,Timestamp,getDocs,limit,} from 'firebase/firestore';
-
+import { useFocusEffect } from '@react-navigation/native';
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
 import { auth, db } from '../../services/firebaseConfig';
@@ -46,7 +46,15 @@ export default function UserScreen() {
 
   // Live plan from Subscription
 // Use fbUser?.uid as a dependency for usePlan
-  const { plan, ready: planReady, uid: planUid } = usePlan(fbUser?.uid);
+const { plan, ready: planReady, uid: planUid, refreshPlan } = usePlan(fbUser?.uid);
+  useFocusEffect(
+  useCallback(() => {
+    if (fbUser?.uid) {
+      refreshPlan();
+    }
+  }, [fbUser?.uid, refreshPlan])
+);
+
   const [planVisible, setPlanVisible] = useState(false);
 
   // Auth state change
@@ -88,7 +96,7 @@ export default function UserScreen() {
 
         // Fetch counts
         const [activity, category, mood] = await Promise.all([
-          smartCount(db, 'Activiiasgdfty', u.uid),
+          smartCount(db, 'Activity', u.uid),
           smartCount(db, 'Category', u.uid),
           smartCount(db, 'Mood', u.uid),
         ]);
@@ -136,17 +144,16 @@ export default function UserScreen() {
           ) : (
             <>
               <Row label="Name" value={name} theme={theme} />
-              <Row label="Date of Birth" value={dob} theme={theme} />
               <Row
                 label="Email"
                 value={email}
-                right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />}
                 theme={theme}
               />
               <Row
                 label="Plan"
                 value={planReady ? plan : "Loading..."}
                 last
+                right={<Ionicons name="chevron-forward" size={18} color="#97A0A6" />}
                 onPress={() => setPlanVisible(true)}
                 theme={theme}
               />

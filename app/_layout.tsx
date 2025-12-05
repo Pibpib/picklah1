@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import Purchases from 'react-native-purchases';
 import { useFonts, Roboto_300Light, Roboto_400Regular, Roboto_500Medium, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { auth } from '@/services/firebaseConfig';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
@@ -19,7 +20,21 @@ export default function RootLayout() {
     const androidApiKey = 'test_rpTQNQDgiGUMBthzMtLmUbBYRXR';
 
     Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
-    Purchases.configure({ apiKey: Platform.OS === 'ios' ? iosApiKey : androidApiKey,  });
+
+    // Initial configure without userID (anonymous)
+    Purchases.configure({ apiKey: Platform.OS === 'ios' ? iosApiKey : androidApiKey });
+
+    // Update RevenueCat user when Firebase user changes
+    const unsub = auth.onAuthStateChanged(async (user) => {
+      if (user?.uid) {
+        console.log('[RootLayout] Logging in RevenueCat with UID:', user.uid);
+        await Purchases.logIn(user.uid);
+      } else {
+        console.log('[RootLayout] No user, RevenueCat stays anonymous.');
+      }
+    });
+
+    return () => unsub();
   }, []);
 
   const [fontsLoaded] = useFonts({

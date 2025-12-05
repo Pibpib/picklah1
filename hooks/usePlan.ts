@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Purchases from "react-native-purchases";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/services/firebaseConfig";
@@ -8,24 +8,15 @@ export function usePlan(uid?: string | null) {
   const [plan, setPlan] = useState<Plan>("Free");
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    if (!uid) {
-      console.log("[usePlan] No UID yet");
-      return;
-    }
-
-    console.log("[usePlan] Initializing for UID:", uid);
-
-    const updatePlan = async (customerInfo: any) => {
-      console.log("[usePlan] CustomerInfo received:", JSON.stringify(customerInfo, null, 2));
+  const updatePlan = useCallback(
+    async (customerInfo: any) => {
+      if (!uid) return;
 
       const entitlement = customerInfo.entitlements.active["PickLah Pro"];
       const hasPremium = !!entitlement;
-
       const newPlan: Plan = hasPremium ? "Premium" : "Free";
-      setPlan(newPlan);
 
-      console.log(`[usePlan] Updating Firestore for UID: ${uid}, plan: ${newPlan}`);
+      setPlan(newPlan);
 
       try {
         await setDoc(
@@ -41,31 +32,30 @@ export function usePlan(uid?: string | null) {
           },
           { merge: true }
         );
-        console.log("[usePlan] Firestore subscription updated successfully");
       } catch (e) {
         console.error("[usePlan] Error updating Firestore:", e);
       }
 
       setReady(true);
-    };
+    },
+    [uid]
+  );
 
-    // Initialize by fetching current customer info
-    const init = async () => {
-      try {
-        const customerInfo = await Purchases.getCustomerInfo();
-        await updatePlan(customerInfo);
-      } catch (e) {
-        console.error("[usePlan] Error fetching customer info:", e);
-      }
-    };
+  const refreshPlan = useCallback(async () => {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      await updatePlan(customerInfo);
+    } catch (e) {
+      console.error("[usePlan] Error refreshing plan:", e);
+    }
+  }, [updatePlan]);
 
-    init();
+  useEffect(() => {
+    if (!uid) return;
 
-    // Listen to real-time updates from RevenueCat
+    refreshPlan(); // initial fetch
     Purchases.addCustomerInfoUpdateListener(updatePlan);
+  }, [uid, updatePlan, refreshPlan]);
 
-    // Cleanup not needed (SDK handles it)
-  }, [uid]);
-
-  return { plan, ready, uid };
+  return { plan, ready, uid, refreshPlan };
 }
