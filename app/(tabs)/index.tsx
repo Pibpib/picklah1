@@ -326,7 +326,7 @@ export default function SpinScreen() {
                   ]}
                   onPress={() => toggleCategory(cat.id)}
                 >
-                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: isSelected ? "bold" : "normal" }}>
+                  <Text style={{ fontSize: 12, fontWeight: isSelected ? "bold" : "normal" }}>
                     {cat.categoryName}
                   </Text>
                 </TouchableOpacity>
@@ -401,7 +401,18 @@ export default function SpinScreen() {
 
                 return (
                   <React.Fragment key={activity.id}>
-                    <Path d={createPath(i)} fill={i % 2 === 0 ? theme.background : theme.mainlight} />
+                    <Path
+                      d={createPath(i)}
+                      fill={
+                        colorScheme === "dark"
+                          ? i % 2 === 0
+                            ? theme.text // dark slice
+                            : theme.mainlight // light/golden slice
+                          : i % 2 === 0
+                            ? theme.background // light background slice
+                            : theme.mainlight   // light accent slice
+                      }
+                    />
                     <SvgText
                       x={x}
                       y={y}
